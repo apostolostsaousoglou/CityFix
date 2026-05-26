@@ -52,11 +52,17 @@ public class AuthDialog {
         loginBtn.getStyleClass().add("auth-submit-btn");
         loginBtn.setMaxWidth(Double.MAX_VALUE);
 
+        // Toggle link to register
+        Label toggleLbl = new Label("Don't have an account?");
+        toggleLbl.getStyleClass().add("auth-toggle-link");
+        toggleLbl.setOnMouseClicked(ev -> cardContainer.getChildren().setAll(buildRegisterCard()));
+
         VBox card = new VBox(14,
                 title,
                 new VBox(6, emailLbl, emailField),
                 new VBox(6, passLbl, passField),
-                loginBtn);
+                loginBtn,
+                toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40, 40, 40, 40));
         card.getStyleClass().add("auth-card");
@@ -81,7 +87,7 @@ public class AuthDialog {
         lastField.setMaxWidth(Double.MAX_VALUE);
 
         VBox firstBox = new VBox(4, firstLbl, firstField);
-        VBox lastBox  = new VBox(4, lastLbl,  lastField);
+        VBox lastBox  = new VBox(4, lastLbl, lastField);
         HBox.setHgrow(firstBox, Priority.ALWAYS);
         HBox.setHgrow(lastBox,  Priority.ALWAYS);
         HBox nameRow = new HBox(10, firstBox, lastBox);
@@ -114,14 +120,20 @@ public class AuthDialog {
         registerBtn.getStyleClass().add("auth-submit-btn");
         registerBtn.setMaxWidth(Double.MAX_VALUE);
 
+        // Toggle link back to login
+        Label toggleLbl = new Label("Already have an account?");
+        toggleLbl.getStyleClass().add("auth-toggle-link");
+        toggleLbl.setOnMouseClicked(ev -> cardContainer.getChildren().setAll(buildLoginCard()));
+
         VBox card = new VBox(10,
                 title,
                 nameRow,
-                new VBox(6, emailLbl,   emailField),
-                new VBox(6, mobileLbl,  mobileField),
-                new VBox(6, passLbl,    passField),
+                new VBox(6, emailLbl, emailField),
+                new VBox(6, mobileLbl, mobileField),
+                new VBox(6, passLbl, passField),
                 new VBox(6, confirmLbl, confirmField),
-                registerBtn);
+                registerBtn,
+                toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(30, 40, 30, 40));
         card.getStyleClass().add("auth-card");
