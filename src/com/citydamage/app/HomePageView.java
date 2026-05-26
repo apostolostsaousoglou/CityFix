@@ -59,7 +59,7 @@ public class HomePageView {
 
     private ScrollPane buildScrollArea() {
         VBox content = new VBox(0);
-        content.getChildren().add(buildHero());
+        content.getChildren().addAll(buildHero(), buildHowItWorks());
         content.getStyleClass().add("main-content-bg");
 
         ScrollPane sp = new ScrollPane(content);
@@ -95,5 +95,46 @@ public class HomePageView {
         hero.setPrefHeight(460);
         StackPane.setAlignment(card, Pos.CENTER);
         return hero;
+    }
+
+    private VBox buildHowItWorks() {
+        Label howTitle = new Label("How It Works");
+        howTitle.getStyleClass().add("section-title");
+
+        VBox step1Card = buildStepCard("📸", "Locate",  "Find the exact location on the map");
+        VBox step2Card = buildStepCard("📝", "Submit",  "Describe the damage and submit your report");
+        VBox step3Card = buildStepCard("📍", "Track",   "Follow the progress of your report");
+
+        HBox cardsRow = new HBox(30, step1Card, step2Card, step3Card);
+        cardsRow.setAlignment(Pos.CENTER);
+
+        VBox section = new VBox(55, howTitle, cardsRow);
+        section.setAlignment(Pos.CENTER);
+        section.setPadding(new Insets(90, 60, 120, 60));
+        section.getStyleClass().add("how-section");
+        return section;
+    }
+
+    private VBox buildStepCard(String icon, String title, String desc) {
+        Label iconLbl  = new Label(icon);
+        iconLbl.getStyleClass().add("step-card-icon");
+
+        Label titleLbl = new Label(title);
+        titleLbl.getStyleClass().add("step-card-title");
+        titleLbl.setWrapText(true);
+        titleLbl.setTextAlignment(TextAlignment.CENTER);
+
+        Label descLbl  = new Label(desc);
+        descLbl.getStyleClass().add("step-card-desc");
+        descLbl.setWrapText(true);
+        descLbl.setTextAlignment(TextAlignment.CENTER);
+
+        VBox card = new VBox(14, iconLbl, titleLbl, descLbl);
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(38, 28, 38, 28));
+        card.getStyleClass().add("step-card");
+        card.setPrefSize(340, 220);
+        card.setMaxWidth(360);
+        return card;
     }
 }
