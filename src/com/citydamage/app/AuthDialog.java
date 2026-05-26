@@ -63,4 +63,69 @@ public class AuthDialog {
         card.setMaxWidth(360);
         return card;
     }
+
+    private VBox buildRegisterCard() {
+        Label title = new Label("Register");
+        title.getStyleClass().add("auth-card-title");
+
+        Label firstLbl = new Label("First Name");
+        firstLbl.getStyleClass().add("auth-field-label");
+        TextField firstField = new TextField();
+        firstField.getStyleClass().add("auth-field");
+        firstField.setMaxWidth(Double.MAX_VALUE);
+
+        Label lastLbl = new Label("Last Name");
+        lastLbl.getStyleClass().add("auth-field-label");
+        TextField lastField = new TextField();
+        lastField.getStyleClass().add("auth-field");
+        lastField.setMaxWidth(Double.MAX_VALUE);
+
+        VBox firstBox = new VBox(4, firstLbl, firstField);
+        VBox lastBox  = new VBox(4, lastLbl,  lastField);
+        HBox.setHgrow(firstBox, Priority.ALWAYS);
+        HBox.setHgrow(lastBox,  Priority.ALWAYS);
+        HBox nameRow = new HBox(10, firstBox, lastBox);
+
+        Label emailLbl = new Label("Email");
+        emailLbl.getStyleClass().add("auth-field-label");
+        TextField emailField = new TextField();
+        emailField.getStyleClass().add("auth-field");
+        emailField.setMaxWidth(Double.MAX_VALUE);
+
+        Label mobileLbl = new Label("Mobile Phone");
+        mobileLbl.getStyleClass().add("auth-field-label");
+        TextField mobileField = new TextField();
+        mobileField.getStyleClass().add("auth-field");
+        mobileField.setMaxWidth(Double.MAX_VALUE);
+
+        Label passLbl = new Label("Password");
+        passLbl.getStyleClass().add("auth-field-label");
+        PasswordField passField = new PasswordField();
+        passField.getStyleClass().add("auth-field");
+        passField.setMaxWidth(Double.MAX_VALUE);
+
+        Label confirmLbl = new Label("Confirm Password");
+        confirmLbl.getStyleClass().add("auth-field-label");
+        PasswordField confirmField = new PasswordField();
+        confirmField.getStyleClass().add("auth-field");
+        confirmField.setMaxWidth(Double.MAX_VALUE);
+
+        Button registerBtn = new Button("Register");
+        registerBtn.getStyleClass().add("auth-submit-btn");
+        registerBtn.setMaxWidth(Double.MAX_VALUE);
+
+        VBox card = new VBox(10,
+                title,
+                nameRow,
+                new VBox(6, emailLbl,   emailField),
+                new VBox(6, mobileLbl,  mobileField),
+                new VBox(6, passLbl,    passField),
+                new VBox(6, confirmLbl, confirmField),
+                registerBtn);
+        card.setAlignment(Pos.TOP_CENTER);
+        card.setPadding(new Insets(30, 40, 30, 40));
+        card.getStyleClass().add("auth-card");
+        card.setMaxWidth(380);
+        return card;
+    }
 }
