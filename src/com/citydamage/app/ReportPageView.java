@@ -5,6 +5,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.util.List;
+
 public class ReportPageView {
 
     private final Runnable onBack;
@@ -15,6 +17,7 @@ public class ReportPageView {
     private TextField streetField;
     private TextField numberField;
     private TextField zipField;
+    private ComboBox<String> areaCombo;
 
     private double selectedLat = 38.2466;
     private double selectedLng = 21.7346;
@@ -57,44 +60,60 @@ public class ReportPageView {
     private VBox buildCardPanel() {
         Label title = new Label("Report Damage");
         title.getStyleClass().add("report-card-title");
+        title.setMaxWidth(Double.MAX_VALUE);
 
-        streetField = new TextField();
-        streetField.setPromptText("e.g. Main St");
-        streetField.getStyleClass().add("report-field");
-
-        numberField = new TextField();
-        numberField.setPromptText("e.g. 12, 12A");
-        numberField.getStyleClass().add("report-field");
+        streetField = styledField("e.g. Main St");
+        numberField = styledField("e.g. 12, 12A");
+        zipField    = styledField("e.g. 264 41");
         numberField.setPrefWidth(100);
-
-        zipField = new TextField();
-        zipField.setPromptText("e.g. 264 41");
-        zipField.getStyleClass().add("report-field");
         zipField.setPrefWidth(120);
 
-        Label streetLbl = new Label("Street");
-        streetLbl.getStyleClass().add("report-field-label");
-        Label numberLbl = new Label("Number");
-        numberLbl.getStyleClass().add("report-field-label");
-        Label zipLbl = new Label("ZIP");
-        zipLbl.getStyleClass().add("report-field-label");
-
-        VBox streetBox = new VBox(6, streetLbl, streetField);
-        VBox numberBox = new VBox(6, numberLbl, numberField);
-        VBox zipBox    = new VBox(6, zipLbl, zipField);
+        VBox streetBox = labeled("Street", streetField);
+        VBox numberBox = labeled("Number", numberField);
+        VBox zipBox    = labeled("ZIP",    zipField);
         HBox.setHgrow(streetBox, Priority.ALWAYS);
-
         HBox row1 = new HBox(12, streetBox, numberBox, zipBox);
+
+        areaCombo = new ComboBox<>();
+        areaCombo.getItems().addAll(areaList());
+        areaCombo.getSelectionModel().selectFirst();
+        areaCombo.getStyleClass().add("report-combo");
+        areaCombo.setMaxWidth(Double.MAX_VALUE);
+        VBox areaBox = labeled("Area", areaCombo);
 
         Button nextBtn = new Button("Next");
         nextBtn.getStyleClass().add("cta-btn");
         nextBtn.setMaxWidth(Double.MAX_VALUE);
         nextBtn.setOnAction(e -> { if (onNext != null) onNext.run(); });
 
-        VBox card = new VBox(24, title, row1, nextBtn);
+        VBox card = new VBox(24, title, row1, areaBox, nextBtn);
         card.setPadding(new Insets(40, 36, 40, 36));
         card.setAlignment(Pos.TOP_CENTER);
         return card;
+    }
+
+    private static List<String> areaList() {
+        return List.of(
+            "Select area...",
+            "Patras City Center", "Psilalonia", "Upper Town (Ano Poli)", "Lower Town (Kato Poli)",
+            "Agia Sofia", "Agyia", "Rio", "Zarouchleika", "Taraboura",
+            "Eglykada", "Perivola", "Bozaitika", "Ovrya", "Souli", "Koukoulí"
+        );
+    }
+
+    private TextField styledField(String prompt) {
+        TextField tf = new TextField();
+        tf.setPromptText(prompt);
+        tf.getStyleClass().add("report-field");
+        return tf;
+    }
+
+    private VBox labeled(String text, Control field) {
+        Label lbl = new Label(text);
+        lbl.getStyleClass().add("report-field-label");
+        VBox box = new VBox(6, lbl, field);
+        HBox.setHgrow(box, Priority.ALWAYS);
+        return box;
     }
 
     public double getLat() { return selectedLat; }
