@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    City Damage Reporter — Stylesheet
+   Dark theme (default) | Light theme via .light-theme on root
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── DARK BASE ─────────────────────────────────────────────── */
@@ -8,4 +9,41 @@
 .main-content-bg,
 .how-section {
     -fx-background-color: #1a1a1a;
+}
+
+/* ── NAVBAR ────────────────────────────────────────────────── */
+.navbar-container {
+    -fx-background-color: #111111;
+    -fx-border-color: #2b2b2b;
+    -fx-border-width: 0 0 1 0;
+}
+
+.navbar {
+    -fx-background-color: transparent;
+}
+
+.nav-link {
+    -fx-text-fill: #e0e0e0;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.nav-link:hover {
+    -fx-text-fill: #ffffff;
+}
+
+/* Login / register button */
+.login-btn {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 10 22 10 22;
+    -fx-cursor: hand;
+}
+
+.login-btn:hover {
+    -fx-background-color: #4338ca;
 }
