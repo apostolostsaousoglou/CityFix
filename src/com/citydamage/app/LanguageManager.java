@@ -29,4 +29,19 @@ public class LanguageManager {
     public void toggle() {
         isGreek.set(!isGreek.get());
     }
+
+    // ── Nav strings ───────────────────────────────────────────────────────────
+
+    public String nav_home()    { return isGreek() ? "Αρχική"   : "Home"; }
+    public String nav_reports() { return isGreek() ? "Αναφορές" : "Reports"; }
+    public String nav_useful()  { return isGreek() ? "Χρήσιμα"  : "Useful"; }
+    public String nav_login()   { return isGreek() ? "Είσοδος"  : "Login"; }
+
+    // ── Hero strings ──────────────────────────────────────────────────────────
+
+    public String hero_title()    { return isGreek() ? "Αναφορά Βλάβης" : "Report City Damage"; }
+    public String hero_subtitle() { return isGreek()
+        ? "Βοήθησε να βελτιωθεί η πόλη σου αναφέροντας προβλήματα υποδομών"
+        : "Help improve your city by reporting infrastructure issues"; }
+    public String hero_cta()      { return isGreek() ? "Αναφορά Προβλήματος" : "Report a Problem"; }
 }
