@@ -39,10 +39,14 @@ public class HomePageView {
         HBox links = new HBox(28, navHome, navReports, navUseful);
         links.setAlignment(Pos.CENTER_LEFT);
 
+        Button loginBtn = new Button("Login");
+        loginBtn.getStyleClass().add("login-btn");
+        loginBtn.setOnAction(e -> { if (onLogin != null) onLogin.run(); });
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox navItems = new HBox(16, links, spacer);
+        HBox navItems = new HBox(16, links, spacer, loginBtn);
         navItems.setAlignment(Pos.CENTER);
         navItems.setPadding(new Insets(0, 32, 0, 32));
         navItems.getStyleClass().add("navbar");
