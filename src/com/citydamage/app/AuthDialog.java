@@ -12,6 +12,10 @@ public class AuthDialog {
 
     private static final Map<String, String> users = new HashMap<>();
 
+    // Simple session flag — set to true when a user successfully logs in or registers
+    private static boolean loggedIn = false;
+    private static String  currentUser = null;
+
     private final Runnable onBack;
     private StackPane cardContainer;
 
@@ -72,6 +76,8 @@ public class AuthDialog {
                 return;
             }
             if (users.containsKey(id) && users.get(id).equals(pass)) {
+                loggedIn    = true;
+                currentUser = id;
                 done();
             } else {
                 errorLbl.setText("Incorrect email/mobile or password.");
@@ -164,8 +170,14 @@ public class AuthDialog {
                 errorLbl.setText("Passwords do not match.");
                 return;
             }
+            if (users.containsKey(email)) {
+                errorLbl.setText("This email is already in use.");
+                return;
+            }
             users.put(email, pass);
             users.put(mobile, pass);
+            loggedIn    = true;
+            currentUser = email;
             done();
         });
 
