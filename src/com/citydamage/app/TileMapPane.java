@@ -38,7 +38,6 @@ public class TileMapPane extends Pane {
     private final Group world     = new Group();
     private final Group tileLayer = new Group();
 
-    // ── Drag state ──────────────────────────────────────────────────────────
     private double dragStartX, dragStartY;
     private double dragStartLat, dragStartLon;
 
@@ -53,6 +52,18 @@ public class TileMapPane extends Pane {
         clip.heightProperty().bind(heightProperty());
         setClip(clip);
 
+        // ── Scroll: zoom around cursor ────────────────────────────────────────
+        setOnScroll(e -> {
+            if (e.getDeltaY() == 0) return;
+            int newZoom = zoom + (e.getDeltaY() > 0 ? 1 : -1);
+            if (newZoom < 3 || newZoom > 19) return;
+            zoom = newZoom;
+            pendingFetch.clear();
+            layoutTiles();
+            e.consume();
+        });
+
+        // ── Drag: translate world group ───────────────────────────────────────
         setOnMousePressed(e -> {
             dragStartX   = e.getX();   dragStartY   = e.getY();
             dragStartLat = centerLat;  dragStartLon = centerLon;
@@ -63,7 +74,6 @@ public class TileMapPane extends Pane {
             double dy = e.getY() - dragStartY;
             world.setTranslateX(dx);
             world.setTranslateY(dy);
-            // Update logical centre so tile fetches target the right area
             double tx = tileX(dragStartLon, zoom) - dx / TILE_SIZE;
             double ty = tileY(dragStartLat, zoom) - dy / TILE_SIZE;
             centerLon = tx / (1 << zoom) * 360.0 - 180.0;
