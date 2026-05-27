@@ -44,4 +44,18 @@ public class LanguageManager {
         ? "Βοήθησε να βελτιωθεί η πόλη σου αναφέροντας προβλήματα υποδομών"
         : "Help improve your city by reporting infrastructure issues"; }
     public String hero_cta()      { return isGreek() ? "Αναφορά Προβλήματος" : "Report a Problem"; }
+
+    // ── How It Works section ──────────────────────────────────────────────────
+
+    public String how_title()   { return isGreek() ? "Πώς Λειτουργεί;" : "How Does It Work?"; }
+
+    public String step1_title() { return isGreek() ? "Εντόπισε το Πρόβλημα" : "Locate the Problem"; }
+    public String step1_desc()  { return isGreek()
+        ? "Βγάλε μια φωτογραφία ή περιέγραψε το ζήτημα."
+        : "Take a photo or describe the issue."; }
+
+    public String step2_title() { return isGreek() ? "Υποβολή Αναφοράς" : "Submit a Report"; }
+    public String step2_desc()  { return isGreek()
+        ? "Συμπλήρωσε τα στοιχεία και στείλε την αναφορά σου."
+        : "Fill in the details and send your report."; }
 }
