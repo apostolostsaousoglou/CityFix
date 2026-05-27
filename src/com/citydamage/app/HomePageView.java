@@ -59,7 +59,7 @@ public class HomePageView {
 
     private ScrollPane buildScrollArea() {
         VBox content = new VBox(0);
-        content.getChildren().addAll(buildHero(), buildHowItWorks());
+        content.getChildren().addAll(buildHero(), buildHowItWorks(), buildFooter());
         content.getStyleClass().add("main-content-bg");
 
         ScrollPane sp = new ScrollPane(content);
@@ -136,5 +136,16 @@ public class HomePageView {
         card.setPrefSize(340, 220);
         card.setMaxWidth(360);
         return card;
+    }
+
+    private HBox buildFooter() {
+        Label footerLabel = new Label("CityDamageReporter - Helping improve city infrastructure");
+        footerLabel.getStyleClass().add("footer-text");
+
+        HBox footer = new HBox(footerLabel);
+        footer.setAlignment(Pos.CENTER);
+        footer.setPadding(new Insets(36, 0, 36, 0));
+        footer.getStyleClass().add("footer");
+        return footer;
     }
 }
