@@ -10,7 +10,6 @@ import java.util.Map;
 
 public class AuthDialog {
 
-    // in-memory user store: key = email or mobile, value = password
     private static final Map<String, String> users = new HashMap<>();
 
     private final Runnable onBack;
@@ -54,14 +53,24 @@ public class AuthDialog {
         passField.getStyleClass().add("auth-field");
         passField.setMaxWidth(Double.MAX_VALUE);
 
+        Label errorLbl = new Label("");
+        errorLbl.getStyleClass().add("auth-error-label");
+        errorLbl.setWrapText(true);
+
         Button loginBtn = new Button("Login");
         loginBtn.getStyleClass().add("auth-submit-btn");
         loginBtn.setMaxWidth(Double.MAX_VALUE);
         loginBtn.setOnAction(e -> {
             String id   = emailField.getText().trim();
             String pass = passField.getText();
+            if (id.isEmpty() || pass.isEmpty()) {
+                errorLbl.setText("Please fill in all fields.");
+                return;
+            }
             if (users.containsKey(id) && users.get(id).equals(pass)) {
                 onBack.run();
+            } else {
+                errorLbl.setText("Incorrect email/mobile or password.");
             }
         });
 
@@ -74,6 +83,7 @@ public class AuthDialog {
                 new VBox(6, emailLbl, emailField),
                 new VBox(6, passLbl, passField),
                 loginBtn,
+                errorLbl,
                 toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40, 40, 40, 40));
