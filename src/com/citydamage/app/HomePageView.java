@@ -40,7 +40,7 @@ public class HomePageView {
         HBox links = new HBox(28, navHome, navReports, navUseful);
         links.setAlignment(Pos.CENTER_LEFT);
 
-        Button loginBtn = new Button("Login");
+        Button loginBtn = new Button(lang.nav_login());
         loginBtn.getStyleClass().add("login-btn");
         loginBtn.setOnAction(e -> { if (onLogin != null) onLogin.run(); });
 
@@ -144,7 +144,7 @@ public class HomePageView {
     }
 
     private HBox buildFooter() {
-        Label footerLabel = new Label("CityDamageReporter - Helping improve city infrastructure");
+        Label footerLabel = new Label(lang.footer());
         footerLabel.getStyleClass().add("footer-text");
 
         HBox footer = new HBox(footerLabel);
