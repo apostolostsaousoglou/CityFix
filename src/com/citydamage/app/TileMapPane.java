@@ -1,11 +1,13 @@
 package com.citydamage.app;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.scene.Group;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
+import javafx.util.Duration;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -39,10 +41,12 @@ public class TileMapPane extends Pane {
         }
     };
 
-    // Retained ImageViews — never destroyed between refreshes if tile is still visible
     private final Map<String, ImageView> liveViews    = new HashMap<>();
     private final Set<String>            pendingFetch = new HashSet<>();
-    private final ExecutorService        executor     = Executors.newFixedThreadPool(1);
+    private final ExecutorService        executor     = Executors.newFixedThreadPool(12);
+
+    // ── Debounce: fetch tiles 60 ms after last scroll/drag-release ───────────
+    private final PauseTransition fetchDebounce = new PauseTransition(Duration.millis(60));
 
     private final Group world     = new Group();
     private final Group tileLayer = new Group();
@@ -61,6 +65,8 @@ public class TileMapPane extends Pane {
         clip.heightProperty().bind(heightProperty());
         setClip(clip);
 
+        fetchDebounce.setOnFinished(e -> fetchMissingTiles());
+
         setOnScroll(e -> {
             if (e.getDeltaY() == 0) return;
             int newZoom = zoom + (e.getDeltaY() > 0 ? 1 : -1);
@@ -68,6 +74,7 @@ public class TileMapPane extends Pane {
             zoom = newZoom;
             pendingFetch.clear();
             layoutTiles();
+            fetchDebounce.playFromStart();
             e.consume();
         });
 
@@ -90,10 +97,11 @@ public class TileMapPane extends Pane {
         setOnMouseReleased(e -> {
             world.setTranslateX(0); world.setTranslateY(0);
             layoutTiles();
+            fetchDebounce.playFromStart();
         });
 
-        widthProperty().addListener((o, a, b)  -> layoutTiles());
-        heightProperty().addListener((o, a, b) -> layoutTiles());
+        widthProperty().addListener((o, a, b)  -> { layoutTiles(); fetchDebounce.playFromStart(); });
+        heightProperty().addListener((o, a, b) -> { layoutTiles(); fetchDebounce.playFromStart(); });
     }
 
     private void layoutTiles() {
@@ -120,7 +128,6 @@ public class TileMapPane extends Pane {
             }
         }
 
-        // Remove views that scrolled off screen
         liveViews.keySet().removeIf(key -> {
             if (!needed.contains(key)) {
                 tileLayer.getChildren().remove(liveViews.get(key));
@@ -144,9 +151,29 @@ public class TileMapPane extends Pane {
                     ImageView iv = makeTileView(tileCache.get(key), px, py);
                     liveViews.put(key, iv);
                     tileLayer.getChildren().add(iv);
-                } else {
-                    submitFetch(wtx, ty, zoom);
                 }
+            }
+        }
+    }
+
+    private void fetchMissingTiles() {
+        double w = getWidth(), h = getHeight();
+        if (w <= 0 || h <= 0) return;
+
+        double cTX  = tileX(centerLon, zoom);
+        double cTY  = tileY(centerLat, zoom);
+        int extra   = 2;
+        int tilesW  = (int) Math.ceil(w / TILE_SIZE) + extra * 2;
+        int tilesH  = (int) Math.ceil(h / TILE_SIZE) + extra * 2;
+        int startX  = (int) Math.floor(cTX - tilesW / 2.0);
+        int startY  = (int) Math.floor(cTY - tilesH / 2.0);
+        int maxTile = 1 << zoom;
+
+        for (int tx = startX; tx <= startX + tilesW; tx++) {
+            for (int ty = startY; ty <= startY + tilesH; ty++) {
+                if (ty < 0 || ty >= maxTile) continue;
+                int wtx = ((tx % maxTile) + maxTile) % maxTile;
+                submitFetch(wtx, ty, zoom);
             }
         }
     }
@@ -167,10 +194,11 @@ public class TileMapPane extends Pane {
                 if (w <= 0 || h <= 0) return;
                 double cTX = tileX(centerLon, zoom);
                 double cTY = tileY(centerLat, zoom);
-                String[] parts = key.split("/");
-                if (Integer.parseInt(parts[0]) != zoom) return;
-                int kx = Integer.parseInt(parts[1]);
-                int ky = Integer.parseInt(parts[2]);
+                String[] p = key.split("/");
+                int kz = Integer.parseInt(p[0]);
+                int kx = Integer.parseInt(p[1]);
+                int ky = Integer.parseInt(p[2]);
+                if (kz != zoom) return;
                 double screenPx = w / 2.0 + (kx - cTX) * TILE_SIZE;
                 double screenPy = h / 2.0 + (ky - cTY) * TILE_SIZE;
                 if (screenPx > -TILE_SIZE && screenPx < w + TILE_SIZE &&
