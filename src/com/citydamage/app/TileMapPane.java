@@ -14,6 +14,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -31,9 +32,17 @@ public class TileMapPane extends Pane {
     private double  centerLon  = 21.7346;
     private int     zoom       = 13;
 
-    private final Map<String, Image> tileCache    = new HashMap<>();
-    private final Set<String>        pendingFetch = new HashSet<>();
-    private final ExecutorService    executor     = Executors.newFixedThreadPool(1);
+    // ── LRU tile image cache (max 500 tiles) ────────────────────────────────
+    private final Map<String, Image> tileCache = new LinkedHashMap<>(512, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, Image> e) {
+            return size() > 500;
+        }
+    };
+
+    // Retained ImageViews — never destroyed between refreshes if tile is still visible
+    private final Map<String, ImageView> liveViews    = new HashMap<>();
+    private final Set<String>            pendingFetch = new HashSet<>();
+    private final ExecutorService        executor     = Executors.newFixedThreadPool(1);
 
     private final Group world     = new Group();
     private final Group tileLayer = new Group();
@@ -52,7 +61,6 @@ public class TileMapPane extends Pane {
         clip.heightProperty().bind(heightProperty());
         setClip(clip);
 
-        // ── Scroll: zoom around cursor ────────────────────────────────────────
         setOnScroll(e -> {
             if (e.getDeltaY() == 0) return;
             int newZoom = zoom + (e.getDeltaY() > 0 ? 1 : -1);
@@ -63,7 +71,6 @@ public class TileMapPane extends Pane {
             e.consume();
         });
 
-        // ── Drag: translate world group ───────────────────────────────────────
         setOnMousePressed(e -> {
             dragStartX   = e.getX();   dragStartY   = e.getY();
             dragStartLat = centerLat;  dragStartLon = centerLon;
@@ -90,7 +97,6 @@ public class TileMapPane extends Pane {
     }
 
     private void layoutTiles() {
-        tileLayer.getChildren().clear();
         double w = getWidth(), h = getHeight();
         if (w <= 0 || h <= 0) return;
 
@@ -105,6 +111,24 @@ public class TileMapPane extends Pane {
         int startY  = (int) Math.floor(cTY - tilesH / 2.0);
         int maxTile = 1 << zoom;
 
+        Set<String> needed = new HashSet<>();
+        for (int tx = startX; tx <= startX + tilesW; tx++) {
+            for (int ty = startY; ty <= startY + tilesH; ty++) {
+                if (ty < 0 || ty >= maxTile) continue;
+                int wtx = ((tx % maxTile) + maxTile) % maxTile;
+                needed.add(zoom + "/" + wtx + "/" + ty);
+            }
+        }
+
+        // Remove views that scrolled off screen
+        liveViews.keySet().removeIf(key -> {
+            if (!needed.contains(key)) {
+                tileLayer.getChildren().remove(liveViews.get(key));
+                return true;
+            }
+            return false;
+        });
+
         for (int tx = startX; tx <= startX + tilesW; tx++) {
             for (int ty = startY; ty <= startY + tilesH; ty++) {
                 if (ty < 0 || ty >= maxTile) continue;
@@ -112,16 +136,22 @@ public class TileMapPane extends Pane {
                 double px  = w / 2.0 + (tx - cTX) * TILE_SIZE;
                 double py  = h / 2.0 + (ty - cTY) * TILE_SIZE;
                 String key = zoom + "/" + wtx + "/" + ty;
-                if (tileCache.containsKey(key)) {
-                    tileLayer.getChildren().add(makeTileView(tileCache.get(key), px, py));
+
+                if (liveViews.containsKey(key)) {
+                    ImageView iv = liveViews.get(key);
+                    iv.setX(px); iv.setY(py);
+                } else if (tileCache.containsKey(key)) {
+                    ImageView iv = makeTileView(tileCache.get(key), px, py);
+                    liveViews.put(key, iv);
+                    tileLayer.getChildren().add(iv);
                 } else {
-                    submitFetch(wtx, ty, zoom, px, py);
+                    submitFetch(wtx, ty, zoom);
                 }
             }
         }
     }
 
-    private void submitFetch(int x, int y, int z, double px, double py) {
+    private void submitFetch(int x, int y, int z) {
         String key = z + "/" + x + "/" + y;
         if (tileCache.containsKey(key) || pendingFetch.contains(key)) return;
         pendingFetch.add(key);
@@ -132,6 +162,7 @@ public class TileMapPane extends Pane {
                 pendingFetch.remove(key);
                 if (img == null) return;
                 tileCache.put(key, img);
+                if (liveViews.containsKey(key)) return;
                 double w = getWidth(), h = getHeight();
                 if (w <= 0 || h <= 0) return;
                 double cTX = tileX(centerLon, zoom);
@@ -144,7 +175,9 @@ public class TileMapPane extends Pane {
                 double screenPy = h / 2.0 + (ky - cTY) * TILE_SIZE;
                 if (screenPx > -TILE_SIZE && screenPx < w + TILE_SIZE &&
                     screenPy > -TILE_SIZE && screenPy < h + TILE_SIZE) {
-                    tileLayer.getChildren().add(makeTileView(img, screenPx, screenPy));
+                    ImageView iv = makeTileView(img, screenPx, screenPy);
+                    liveViews.put(key, iv);
+                    tileLayer.getChildren().add(iv);
                 }
             });
         });
