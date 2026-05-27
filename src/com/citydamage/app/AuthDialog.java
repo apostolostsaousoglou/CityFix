@@ -86,9 +86,7 @@ public class AuthDialog {
                 title,
                 new VBox(6, emailLbl, emailField),
                 new VBox(6, passLbl, passField),
-                loginBtn,
-                errorLbl,
-                toggleLbl);
+                loginBtn, errorLbl, toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40, 40, 40, 40));
         card.getStyleClass().add("auth-card");
@@ -150,9 +148,22 @@ public class AuthDialog {
         registerBtn.getStyleClass().add("auth-submit-btn");
         registerBtn.setMaxWidth(Double.MAX_VALUE);
         registerBtn.setOnAction(e -> {
-            String email  = emailField.getText().trim();
-            String mobile = mobileField.getText().trim();
-            String pass   = passField.getText();
+            String first   = firstField.getText().trim();
+            String last    = lastField.getText().trim();
+            String email   = emailField.getText().trim();
+            String mobile  = mobileField.getText().trim();
+            String pass    = passField.getText();
+            String confirm = confirmField.getText();
+
+            if (first.isEmpty() || last.isEmpty() || email.isEmpty()
+                    || mobile.isEmpty() || pass.isEmpty() || confirm.isEmpty()) {
+                errorLbl.setText("Please fill in all fields.");
+                return;
+            }
+            if (!pass.equals(confirm)) {
+                errorLbl.setText("Passwords do not match.");
+                return;
+            }
             users.put(email, pass);
             users.put(mobile, pass);
             done();
@@ -168,9 +179,7 @@ public class AuthDialog {
                 new VBox(6, mobileLbl, mobileField),
                 new VBox(6, passLbl, passField),
                 new VBox(6, confirmLbl, confirmField),
-                registerBtn,
-                errorLbl,
-                toggleLbl);
+                registerBtn, errorLbl, toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(30, 40, 30, 40));
         card.getStyleClass().add("auth-card");
