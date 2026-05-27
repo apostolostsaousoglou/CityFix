@@ -33,7 +33,6 @@
     -fx-text-fill: #ffffff;
 }
 
-/* Login / register button */
 .login-btn {
     -fx-background-color: #4f46e5;
     -fx-text-fill: white;
@@ -75,7 +74,6 @@
     -fx-font-size: 17px;
 }
 
-/* Report / CTA button */
 .cta-btn {
     -fx-background-color: #4f46e5;
     -fx-text-fill: white;
@@ -107,39 +105,90 @@
     -fx-background-color: #4f46e5;
 }
 
-.step-card-icon {
-    -fx-font-size: 42px;
+.step-card-icon  { -fx-font-size: 42px; }
+.step-card-title { -fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; }
+.step-card-desc  { -fx-text-fill: #9a9a9a; -fx-font-size: 14px; }
+
+/* ── FOOTER ────────────────────────────────────────────────── */
+.footer      { -fx-background-color: #111111; -fx-border-color: #2b2b2b; -fx-border-width: 1 0 0 0; }
+.footer-text { -fx-text-fill: #6b6b6b; -fx-font-size: 13px; }
+
+/* ── SCROLLPANE CHROME ─────────────────────────────────────── */
+.main-scroll              { -fx-background-color: transparent; -fx-padding: 0; }
+.main-scroll > .viewport  { -fx-background-color: transparent; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AUTH DIALOG CSS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.auth-card {
+    -fx-background-color: rgba(18, 18, 28, 0.88);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255, 255, 255, 0.07);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.9), 50, 0, 0, 0);
 }
 
-.step-card-title {
+.auth-card-title {
     -fx-text-fill: white;
-    -fx-font-size: 20px;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-padding: 0 0 8 0;
+}
+
+.auth-field-label {
+    -fx-text-fill: #c0c8d8;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
 }
 
-.step-card-desc {
-    -fx-text-fill: #9a9a9a;
-    -fx-font-size: 14px;
-}
-
-/* ── FOOTER ────────────────────────────────────────────────── */
-.footer {
-    -fx-background-color: #111111;
-    -fx-border-color: #2b2b2b;
-    -fx-border-width: 1 0 0 0;
-}
-
-.footer-text {
-    -fx-text-fill: #6b6b6b;
+.auth-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1;
+    -fx-border-radius: 7;
+    -fx-background-radius: 7;
+    -fx-padding: 9 12;
     -fx-font-size: 13px;
+    -fx-text-fill: #0f172a;
+    -fx-prompt-text-fill: #94a3b8;
 }
 
-/* ── SCROLLPANE CHROME ─────────────────────────────────────── */
-.main-scroll {
-    -fx-background-color: transparent;
-    -fx-padding: 0;
+.auth-field:focused {
+    -fx-border-color: #4f46e5;
+    -fx-effect: dropshadow(gaussian, rgba(79,70,229,0.3), 6, 0, 0, 0);
 }
 
-.main-scroll > .viewport {
-    -fx-background-color: transparent;
+.auth-submit-btn {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 9;
+    -fx-padding: 12 0;
+    -fx-cursor: hand;
+}
+
+.auth-submit-btn:hover {
+    -fx-background-color: #4338ca;
+}
+
+.auth-toggle-link {
+    -fx-text-fill: #22d3ee;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-underline: true;
+    -fx-alignment: center;
+}
+
+.auth-toggle-link:hover {
+    -fx-text-fill: #67e8f9;
+}
+
+.auth-error-label {
+    -fx-text-fill: #f87171;
+    -fx-font-size: 12px;
+    -fx-alignment: center;
 }
