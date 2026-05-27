@@ -5,7 +5,13 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class AuthDialog {
+
+    // in-memory user store: key = email or mobile, value = password
+    private static final Map<String, String> users = new HashMap<>();
 
     private final Runnable onBack;
     private StackPane cardContainer;
@@ -51,8 +57,14 @@ public class AuthDialog {
         Button loginBtn = new Button("Login");
         loginBtn.getStyleClass().add("auth-submit-btn");
         loginBtn.setMaxWidth(Double.MAX_VALUE);
+        loginBtn.setOnAction(e -> {
+            String id   = emailField.getText().trim();
+            String pass = passField.getText();
+            if (users.containsKey(id) && users.get(id).equals(pass)) {
+                onBack.run();
+            }
+        });
 
-        // Toggle link to register
         Label toggleLbl = new Label("Don't have an account?");
         toggleLbl.getStyleClass().add("auth-toggle-link");
         toggleLbl.setOnMouseClicked(ev -> cardContainer.getChildren().setAll(buildRegisterCard()));
@@ -89,7 +101,7 @@ public class AuthDialog {
         VBox firstBox = new VBox(4, firstLbl, firstField);
         VBox lastBox  = new VBox(4, lastLbl, lastField);
         HBox.setHgrow(firstBox, Priority.ALWAYS);
-        HBox.setHgrow(lastBox,  Priority.ALWAYS);
+        HBox.setHgrow(lastBox, Priority.ALWAYS);
         HBox nameRow = new HBox(10, firstBox, lastBox);
 
         Label emailLbl = new Label("Email");
@@ -119,21 +131,26 @@ public class AuthDialog {
         Button registerBtn = new Button("Register");
         registerBtn.getStyleClass().add("auth-submit-btn");
         registerBtn.setMaxWidth(Double.MAX_VALUE);
+        registerBtn.setOnAction(e -> {
+            String email  = emailField.getText().trim();
+            String mobile = mobileField.getText().trim();
+            String pass   = passField.getText();
+            users.put(email, pass);
+            users.put(mobile, pass);
+            onBack.run();
+        });
 
-        // Toggle link back to login
         Label toggleLbl = new Label("Already have an account?");
         toggleLbl.getStyleClass().add("auth-toggle-link");
         toggleLbl.setOnMouseClicked(ev -> cardContainer.getChildren().setAll(buildLoginCard()));
 
         VBox card = new VBox(10,
-                title,
-                nameRow,
+                title, nameRow,
                 new VBox(6, emailLbl, emailField),
                 new VBox(6, mobileLbl, mobileField),
                 new VBox(6, passLbl, passField),
                 new VBox(6, confirmLbl, confirmField),
-                registerBtn,
-                toggleLbl);
+                registerBtn, toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(30, 40, 30, 40));
         card.getStyleClass().add("auth-card");
