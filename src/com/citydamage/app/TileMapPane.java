@@ -13,7 +13,9 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,8 +31,9 @@ public class TileMapPane extends Pane {
     private double  centerLon  = 21.7346;
     private int     zoom       = 13;
 
-    private final Map<String, Image> tileCache = new HashMap<>();
-    private final ExecutorService    executor  = Executors.newFixedThreadPool(1);
+    private final Map<String, Image> tileCache    = new HashMap<>();
+    private final Set<String>        pendingFetch = new HashSet<>();
+    private final ExecutorService    executor     = Executors.newFixedThreadPool(1);
 
     private final Group world     = new Group();
     private final Group tileLayer = new Group();
@@ -55,10 +58,13 @@ public class TileMapPane extends Pane {
         double w = getWidth(), h = getHeight();
         if (w <= 0 || h <= 0) return;
 
+        world.setTranslateX(0); world.setTranslateY(0);
+
         double cTX  = tileX(centerLon, zoom);
         double cTY  = tileY(centerLat, zoom);
-        int tilesW  = (int) Math.ceil(w / TILE_SIZE) + 2;
-        int tilesH  = (int) Math.ceil(h / TILE_SIZE) + 2;
+        int extra   = 2;
+        int tilesW  = (int) Math.ceil(w / TILE_SIZE) + extra * 2;
+        int tilesH  = (int) Math.ceil(h / TILE_SIZE) + extra * 2;
         int startX  = (int) Math.floor(cTX - tilesW / 2.0);
         int startY  = (int) Math.floor(cTY - tilesH / 2.0);
         int maxTile = 1 << zoom;
@@ -81,14 +87,30 @@ public class TileMapPane extends Pane {
 
     private void submitFetch(int x, int y, int z, double px, double py) {
         String key = z + "/" + x + "/" + y;
-        if (tileCache.containsKey(key)) return;
+        if (tileCache.containsKey(key) || pendingFetch.contains(key)) return;
+        pendingFetch.add(key);
         String url = buildUrl(z, x, y);
         executor.submit(() -> {
             Image img = downloadTile(url);
             Platform.runLater(() -> {
+                pendingFetch.remove(key);
                 if (img == null) return;
                 tileCache.put(key, img);
-                tileLayer.getChildren().add(makeTileView(img, px, py));
+                // Only add to scene if still at same zoom
+                double w = getWidth(), h = getHeight();
+                if (w <= 0 || h <= 0) return;
+                double cTX = tileX(centerLon, zoom);
+                double cTY = tileY(centerLat, zoom);
+                String[] parts = key.split("/");
+                if (Integer.parseInt(parts[0]) != zoom) return;
+                int kx = Integer.parseInt(parts[1]);
+                int ky = Integer.parseInt(parts[2]);
+                double screenPx = w / 2.0 + (kx - cTX) * TILE_SIZE;
+                double screenPy = h / 2.0 + (ky - cTY) * TILE_SIZE;
+                if (screenPx > -TILE_SIZE && screenPx < w + TILE_SIZE &&
+                    screenPy > -TILE_SIZE && screenPy < h + TILE_SIZE) {
+                    tileLayer.getChildren().add(makeTileView(img, screenPx, screenPy));
+                }
             });
         });
     }
