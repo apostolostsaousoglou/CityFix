@@ -19,6 +19,10 @@ public class AuthDialog {
         this.onBack = onBack;
     }
 
+    private void done() {
+        onBack.run();
+    }
+
     public BorderPane build() {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("root-pane");
@@ -68,7 +72,7 @@ public class AuthDialog {
                 return;
             }
             if (users.containsKey(id) && users.get(id).equals(pass)) {
-                onBack.run();
+                done();
             } else {
                 errorLbl.setText("Incorrect email/mobile or password.");
             }
@@ -138,6 +142,10 @@ public class AuthDialog {
         confirmField.getStyleClass().add("auth-field");
         confirmField.setMaxWidth(Double.MAX_VALUE);
 
+        Label errorLbl = new Label("");
+        errorLbl.getStyleClass().add("auth-error-label");
+        errorLbl.setWrapText(true);
+
         Button registerBtn = new Button("Register");
         registerBtn.getStyleClass().add("auth-submit-btn");
         registerBtn.setMaxWidth(Double.MAX_VALUE);
@@ -147,7 +155,7 @@ public class AuthDialog {
             String pass   = passField.getText();
             users.put(email, pass);
             users.put(mobile, pass);
-            onBack.run();
+            done();
         });
 
         Label toggleLbl = new Label("Already have an account?");
@@ -160,7 +168,9 @@ public class AuthDialog {
                 new VBox(6, mobileLbl, mobileField),
                 new VBox(6, passLbl, passField),
                 new VBox(6, confirmLbl, confirmField),
-                registerBtn, toggleLbl);
+                registerBtn,
+                errorLbl,
+                toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(30, 40, 30, 40));
         card.getStyleClass().add("auth-card");
