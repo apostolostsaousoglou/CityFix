@@ -38,6 +38,10 @@ public class TileMapPane extends Pane {
     private final Group world     = new Group();
     private final Group tileLayer = new Group();
 
+    // ── Drag state ──────────────────────────────────────────────────────────
+    private double dragStartX, dragStartY;
+    private double dragStartLat, dragStartLon;
+
     public TileMapPane() {
         setStyle("-fx-background-color: #ddd8cf;");
 
@@ -48,6 +52,28 @@ public class TileMapPane extends Pane {
         clip.widthProperty().bind(widthProperty());
         clip.heightProperty().bind(heightProperty());
         setClip(clip);
+
+        setOnMousePressed(e -> {
+            dragStartX   = e.getX();   dragStartY   = e.getY();
+            dragStartLat = centerLat;  dragStartLon = centerLon;
+        });
+
+        setOnMouseDragged(e -> {
+            double dx = e.getX() - dragStartX;
+            double dy = e.getY() - dragStartY;
+            world.setTranslateX(dx);
+            world.setTranslateY(dy);
+            // Update logical centre so tile fetches target the right area
+            double tx = tileX(dragStartLon, zoom) - dx / TILE_SIZE;
+            double ty = tileY(dragStartLat, zoom) - dy / TILE_SIZE;
+            centerLon = tx / (1 << zoom) * 360.0 - 180.0;
+            centerLat = Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1.0 - 2.0 * ty / (1 << zoom)))));
+        });
+
+        setOnMouseReleased(e -> {
+            world.setTranslateX(0); world.setTranslateY(0);
+            layoutTiles();
+        });
 
         widthProperty().addListener((o, a, b)  -> layoutTiles());
         heightProperty().addListener((o, a, b) -> layoutTiles());
@@ -96,7 +122,6 @@ public class TileMapPane extends Pane {
                 pendingFetch.remove(key);
                 if (img == null) return;
                 tileCache.put(key, img);
-                // Only add to scene if still at same zoom
                 double w = getWidth(), h = getHeight();
                 if (w <= 0 || h <= 0) return;
                 double cTX = tileX(centerLon, zoom);
