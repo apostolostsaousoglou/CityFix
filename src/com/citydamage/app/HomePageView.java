@@ -8,6 +8,7 @@ import javafx.scene.text.TextAlignment;
 
 public class HomePageView {
 
+    private final LanguageManager lang = LanguageManager.getInstance();
     private final Runnable onReport;
     private final Runnable onLogin;
     private final Runnable onUseful;
@@ -102,12 +103,12 @@ public class HomePageView {
     }
 
     private VBox buildHowItWorks() {
-        Label howTitle = new Label("How It Works");
+        Label howTitle = new Label(lang.how_title());
         howTitle.getStyleClass().add("section-title");
 
-        VBox step1Card = buildStepCard("📸", "Locate",  "Find the exact location on the map");
-        VBox step2Card = buildStepCard("📝", "Submit",  "Describe the damage and submit your report");
-        VBox step3Card = buildStepCard("📍", "Track",   "Follow the progress of your report");
+        VBox step1Card = buildStepCard("📸", lang.step1_title(), lang.step1_desc());
+        VBox step2Card = buildStepCard("📝", lang.step2_title(), lang.step2_desc());
+        VBox step3Card = buildStepCard("📍", lang.step3_title(), lang.step3_desc());
 
         HBox cardsRow = new HBox(30, step1Card, step2Card, step3Card);
         cardsRow.setAlignment(Pos.CENTER);
