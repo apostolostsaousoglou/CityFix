@@ -6,6 +6,9 @@ import javafx.scene.Group;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
@@ -34,7 +37,6 @@ public class TileMapPane extends Pane {
     private double  centerLon  = 21.7346;
     private int     zoom       = 13;
 
-    // ── LRU tile image cache (max 500 tiles) ────────────────────────────────
     private final Map<String, Image> tileCache = new LinkedHashMap<>(512, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, Image> e) {
             return size() > 500;
@@ -45,11 +47,18 @@ public class TileMapPane extends Pane {
     private final Set<String>            pendingFetch = new HashSet<>();
     private final ExecutorService        executor     = Executors.newFixedThreadPool(12);
 
-    // ── Debounce: fetch tiles 60 ms after last scroll/drag-release ───────────
     private final PauseTransition fetchDebounce = new PauseTransition(Duration.millis(60));
 
     private final Group world     = new Group();
     private final Group tileLayer = new Group();
+
+    // ── Marker ───────────────────────────────────────────────────────────────
+    private final Circle marker;
+    private final Line   crossH, crossV;
+
+    private double  pickedLat    = 38.2466;
+    private double  pickedLon    = 21.7346;
+    private boolean markerVisible = false;
 
     private double dragStartX, dragStartY;
     private double dragStartLat, dragStartLon;
@@ -57,8 +66,15 @@ public class TileMapPane extends Pane {
     public TileMapPane() {
         setStyle("-fx-background-color: #ddd8cf;");
 
+        marker = new Circle(8, Color.web("#6C63FF"));
+        marker.setStroke(Color.WHITE);
+        marker.setStrokeWidth(2.5);
+        marker.setVisible(false);
+
+        crossH = crossLine(); crossV = crossLine();
+
         world.getChildren().add(tileLayer);
-        getChildren().add(world);
+        getChildren().addAll(world, crossH, crossV, marker);
 
         Rectangle clip = new Rectangle();
         clip.widthProperty().bind(widthProperty());
@@ -92,12 +108,36 @@ public class TileMapPane extends Pane {
             double ty = tileY(dragStartLat, zoom) - dy / TILE_SIZE;
             centerLon = tx / (1 << zoom) * 360.0 - 180.0;
             centerLat = Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1.0 - 2.0 * ty / (1 << zoom)))));
+            // Update marker position during drag
+            if (markerVisible) {
+                double[] px = latLonToPixel(pickedLat, pickedLon);
+                marker.setCenterX(px[0] + world.getTranslateX());
+                marker.setCenterY(px[1] + world.getTranslateY());
+            }
         });
 
         setOnMouseReleased(e -> {
             world.setTranslateX(0); world.setTranslateY(0);
             layoutTiles();
             fetchDebounce.playFromStart();
+        });
+
+        // Click-to-select: place marker at clicked location
+        setOnMouseClicked(e -> {
+            if (e.isStillSincePress()) {
+                double[] ll = pixelToLatLon(e.getX(), e.getY());
+                pickedLat = ll[0]; pickedLon = ll[1];
+                markerVisible = true;
+                double[] px = latLonToPixel(pickedLat, pickedLon);
+                marker.setCenterX(px[0]); marker.setCenterY(px[1]);
+                crossH.setStartX(px[0] - 14); crossH.setEndX(px[0] + 14);
+                crossH.setStartY(px[1]);       crossH.setEndY(px[1]);
+                crossV.setStartX(px[0]);       crossV.setEndX(px[0]);
+                crossV.setStartY(px[1] - 14);  crossV.setEndY(px[1] + 14);
+                marker.setVisible(true);
+                crossH.setVisible(true);
+                crossV.setVisible(true);
+            }
         });
 
         widthProperty().addListener((o, a, b)  -> { layoutTiles(); fetchDebounce.playFromStart(); });
@@ -153,6 +193,16 @@ public class TileMapPane extends Pane {
                     tileLayer.getChildren().add(iv);
                 }
             }
+        }
+
+        // Reposition marker
+        if (markerVisible) {
+            double[] px = latLonToPixel(pickedLat, pickedLon);
+            marker.setCenterX(px[0]); marker.setCenterY(px[1]);
+            crossH.setStartX(px[0] - 14); crossH.setEndX(px[0] + 14);
+            crossH.setStartY(px[1]);       crossH.setEndY(px[1]);
+            crossV.setStartX(px[0]);       crossV.setEndX(px[0]);
+            crossV.setStartY(px[1] - 14);  crossV.setEndY(px[1] + 14);
         }
     }
 
@@ -221,6 +271,14 @@ public class TileMapPane extends Pane {
         return iv;
     }
 
+    private static Line crossLine() {
+        Line l = new Line();
+        l.setStroke(Color.web("#6C63FF"));
+        l.setStrokeWidth(2);
+        l.setVisible(false);
+        return l;
+    }
+
     // ── Network ───────────────────────────────────────────────────────────────
 
     private Image downloadTile(String urlStr) {
@@ -253,6 +311,13 @@ public class TileMapPane extends Pane {
     private static double tileY(double lat, int z) {
         double r = Math.toRadians(lat);
         return (1.0 - Math.log(Math.tan(r) + 1.0 / Math.cos(r)) / Math.PI) / 2.0 * (1 << z);
+    }
+
+    private double[] latLonToPixel(double lat, double lon) {
+        return new double[]{
+            getWidth()  / 2.0 + (tileX(lon, zoom) - tileX(centerLon, zoom)) * TILE_SIZE,
+            getHeight() / 2.0 + (tileY(lat, zoom) - tileY(centerLat, zoom)) * TILE_SIZE
+        };
     }
 
     private double[] pixelToLatLon(double px, double py) {
