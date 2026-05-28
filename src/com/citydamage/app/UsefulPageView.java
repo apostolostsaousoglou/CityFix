@@ -5,10 +5,15 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
+import java.awt.Desktop;
+import java.net.URI;
+
 public class UsefulPageView {
 
     private final Runnable onHome;
     private final Runnable onReport;
+
+    private BorderPane rootRef;
 
     public UsefulPageView(Runnable onHome, Runnable onReport) {
         this.onHome   = onHome;
@@ -18,6 +23,7 @@ public class UsefulPageView {
     public BorderPane build() {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("root-pane");
+        rootRef = root;
 
         Button backBtn = new Button("← Home");
         backBtn.getStyleClass().add("login-btn");
@@ -29,23 +35,23 @@ public class UsefulPageView {
         root.setTop(topBar);
 
         VBox col = new VBox(22,
-            card("Police", new String[][]{
+            card("Police",              "https://www.astynomia.gr/",     new String[][]{
                 {"1st Police Department", "261 440 9750", "138 Panepistimiou St., Anthoupoli, 264 43 Patras"},
                 {"2nd Police Department", "261 089 5282", "95 Ermou St., 26110 Patras"},
                 {"3rd Police Department", "261 034 4850", "Filippou & Olympiados – Nikopoleos, 26332 Patras"},
                 {"Traffic Department",    "261 440 9770", "138 Panepistimiou St., Anthoupoli, 264 43 Patras"},
             }),
-            card("Fire Service", new String[][]{
+            card("Fire Service",        "https://www.fireservice.gr/el", new String[][]{
                 {"1st Fire Station", "261 023 3211", "Klirou Agion Martiron, 26335 Patras"},
                 {"2nd Fire Station", "261 034 4880", "Klirou Agion Martiron, Patras"},
             }),
-            card("DEYAP", new String[][]{
+            card("DEYAP",               "https://deyaponline.gr/",       new String[][]{
                 {"Patras Service", "2610 566 184", "81 Pavlou St., 262 32 Patras"},
             }),
-            card("DEI — Public Power", new String[][]{
+            card("DEI — Public Power",  "https://www.dei.gr/el",         new String[][]{
                 {"Patras Service", "261 064 2793", "95 Ermou St., 26110 Patras"},
             }),
-            card("Municipality of Patras", new String[][]{
+            card("Municipality of Patras", "https://www.patras.gr/",     new String[][]{
                 {"Patras Service", "261 461 6336", "7 Gounarei St., 26332 Patras"},
             })
         );
@@ -64,15 +70,32 @@ public class UsefulPageView {
         return root;
     }
 
-    private VBox card(String title, String[][] rows) {
+    private VBox card(String title, String url, String[][] rows) {
         Label lbl = new Label(title);
         lbl.setStyle("-fx-text-fill: white; -fx-font-size: 26px; -fx-font-weight: bold;");
+
+        Label websitePfx = new Label("Website:");
+        websitePfx.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px;");
+
+        Hyperlink link = new Hyperlink(url);
+        link.setStyle(
+            "-fx-text-fill: #60a5fa;" +
+            "-fx-font-size: 13px;" +
+            "-fx-border-color: transparent;" +
+            "-fx-padding: 0;" +
+            "-fx-cursor: hand;" +
+            "-fx-underline: true;"
+        );
+        link.setOnAction(e -> openUrl(url));
+
+        HBox websiteRow = new HBox(6, websitePfx, link);
+        websiteRow.setAlignment(Pos.CENTER_LEFT);
 
         Separator sep = new Separator();
         sep.setStyle("-fx-background-color: rgba(255,255,255,0.15);");
         sep.setPadding(new Insets(2, 0, 4, 0));
 
-        VBox box = new VBox(10, lbl, sep);
+        VBox box = new VBox(10, lbl, websiteRow, sep);
         box.setStyle(
             "-fx-background-color: rgba(14, 14, 32, 0.76);" +
             "-fx-background-radius: 16;" +
@@ -110,5 +133,12 @@ public class UsefulPageView {
         VBox entry = new VBox(3, nameLbl, phoneRow, addrRow);
         entry.setPadding(new Insets(8, 0, 4, 0));
         return entry;
+    }
+
+    private void openUrl(String url) {
+        try {
+            if (Desktop.isDesktopSupported())
+                Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception ignored) {}
     }
 }
