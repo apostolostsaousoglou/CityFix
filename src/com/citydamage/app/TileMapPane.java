@@ -2,6 +2,7 @@ package com.citydamage.app;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -52,16 +53,16 @@ public class TileMapPane extends Pane {
     private final Group world     = new Group();
     private final Group tileLayer = new Group();
 
-    // ── Marker ───────────────────────────────────────────────────────────────
     private final Circle marker;
     private final Line   crossH, crossV;
+
+    private boolean dragEnabled   = false;
+    private double  dragStartX, dragStartY;
+    private double  dragStartLat, dragStartLon;
 
     private double  pickedLat    = 38.2466;
     private double  pickedLon    = 21.7346;
     private boolean markerVisible = false;
-
-    private double dragStartX, dragStartY;
-    private double dragStartLat, dragStartLon;
 
     public TileMapPane() {
         setStyle("-fx-background-color: #ddd8cf;");
@@ -95,11 +96,13 @@ public class TileMapPane extends Pane {
         });
 
         setOnMousePressed(e -> {
+            if (!dragEnabled) return;
             dragStartX   = e.getX();   dragStartY   = e.getY();
             dragStartLat = centerLat;  dragStartLon = centerLon;
         });
 
         setOnMouseDragged(e -> {
+            if (!dragEnabled) return;
             double dx = e.getX() - dragStartX;
             double dy = e.getY() - dragStartY;
             world.setTranslateX(dx);
@@ -108,23 +111,27 @@ public class TileMapPane extends Pane {
             double ty = tileY(dragStartLat, zoom) - dy / TILE_SIZE;
             centerLon = tx / (1 << zoom) * 360.0 - 180.0;
             centerLat = Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1.0 - 2.0 * ty / (1 << zoom)))));
-            // Update marker position during drag
             if (markerVisible) {
                 double[] px = latLonToPixel(pickedLat, pickedLon);
-                marker.setCenterX(px[0] + world.getTranslateX());
-                marker.setCenterY(px[1] + world.getTranslateY());
+                double mx = px[0] + world.getTranslateX();
+                double my = px[1] + world.getTranslateY();
+                marker.setCenterX(mx); marker.setCenterY(my);
+                crossH.setStartX(mx - 14); crossH.setEndX(mx + 14);
+                crossH.setStartY(my);      crossH.setEndY(my);
+                crossV.setStartX(mx);      crossV.setEndX(mx);
+                crossV.setStartY(my - 14); crossV.setEndY(my + 14);
             }
         });
 
         setOnMouseReleased(e -> {
+            if (!dragEnabled) return;
             world.setTranslateX(0); world.setTranslateY(0);
             layoutTiles();
             fetchDebounce.playFromStart();
         });
 
-        // Click-to-select: place marker at clicked location
         setOnMouseClicked(e -> {
-            if (e.isStillSincePress()) {
+            if (dragEnabled && e.isStillSincePress()) {
                 double[] ll = pixelToLatLon(e.getX(), e.getY());
                 pickedLat = ll[0]; pickedLon = ll[1];
                 markerVisible = true;
@@ -143,6 +150,36 @@ public class TileMapPane extends Pane {
         widthProperty().addListener((o, a, b)  -> { layoutTiles(); fetchDebounce.playFromStart(); });
         heightProperty().addListener((o, a, b) -> { layoutTiles(); fetchDebounce.playFromStart(); });
     }
+
+    // ── Public API ────────────────────────────────────────────────────────────
+
+    public void enableDrag()  { dragEnabled = true;  setCursor(Cursor.CROSSHAIR); }
+    public void disableDrag() { dragEnabled = false; setCursor(Cursor.DEFAULT);   }
+
+    public void setLanguage(boolean english) {
+        if (this.useEnglish == english) return;
+        this.useEnglish = english;
+        tileCache.clear();
+        pendingFetch.clear();
+        liveViews.clear();
+        tileLayer.getChildren().clear();
+        layoutTiles();
+        fetchDebounce.playFromStart();
+    }
+
+    public double getPickedLat() { return pickedLat; }
+    public double getPickedLon() { return pickedLon; }
+
+    public void panTo(double lat, double lon) {
+        centerLat = lat; centerLon = lon;
+        pickedLat = lat; pickedLon = lon;
+        zoom = 16; markerVisible = true;
+        pendingFetch.clear();
+        layoutTiles();
+        fetchDebounce.playFromStart();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     private void layoutTiles() {
         double w = getWidth(), h = getHeight();
@@ -196,6 +233,9 @@ public class TileMapPane extends Pane {
         }
 
         // Reposition marker
+        marker.setVisible(markerVisible);
+        crossH.setVisible(markerVisible);
+        crossV.setVisible(markerVisible);
         if (markerVisible) {
             double[] px = latLonToPixel(pickedLat, pickedLon);
             marker.setCenterX(px[0]); marker.setCenterY(px[1]);
