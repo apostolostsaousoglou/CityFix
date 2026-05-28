@@ -58,4 +58,11 @@ public class LanguageManager {
     public String step2_desc()  { return isGreek()
         ? "Συμπλήρωσε τα στοιχεία και στείλε την αναφορά σου."
         : "Fill in the details and send your report."; }
+
+    public String step3_title() { return isGreek() ? "Παρακολούθησε την Εξέλιξη" : "Track Progress"; }
+    public String step3_desc()  { return isGreek()
+        ? "Λάβε ενημερώσεις για την πορεία της επίλυσης."
+        : "Get updates on the resolution progress."; }
+
+    public String footer()      { return "© 2025 City Damage Reporter | Keeping Our City Safe"; }
 }
