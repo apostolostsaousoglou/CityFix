@@ -13,6 +13,8 @@ public class HomePageView {
     private final Runnable onLogin;
     private final Runnable onUseful;
 
+    private BorderPane root;
+
     public HomePageView(Runnable onReport, Runnable onLogin, Runnable onUseful) {
         this.onReport = onReport;
         this.onLogin  = onLogin;
@@ -20,7 +22,7 @@ public class HomePageView {
     }
 
     public BorderPane build() {
-        BorderPane root = new BorderPane();
+        root = new BorderPane();
         root.getStyleClass().add("root-pane");
         root.setTop(buildNavBar());
         root.setCenter(buildScrollArea());
@@ -32,13 +34,15 @@ public class HomePageView {
         navContainer.getStyleClass().add("navbar-container");
         navContainer.setPrefHeight(60);
 
-        Label navHome    = navLink("Home");
-        Label navReports = navLink("Reports");
-        Label navUseful  = navLink("Useful");
+        Label navHome    = navLink(lang.nav_home());
+        Label navReports = navLink(lang.nav_reports());
+        Label navUseful  = navLink(lang.nav_useful());
         navUseful.setOnMouseClicked(e -> { if (onUseful != null) onUseful.run(); });
 
         HBox links = new HBox(28, navHome, navReports, navUseful);
         links.setAlignment(Pos.CENTER_LEFT);
+
+        HBox controls = buildControls();
 
         Button loginBtn = new Button(lang.nav_login());
         loginBtn.getStyleClass().add("login-btn");
@@ -47,7 +51,7 @@ public class HomePageView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox navItems = new HBox(16, links, spacer, loginBtn);
+        HBox navItems = new HBox(16, links, spacer, controls, loginBtn);
         navItems.setAlignment(Pos.CENTER);
         navItems.setPadding(new Insets(0, 32, 0, 32));
         navItems.getStyleClass().add("navbar");
@@ -60,6 +64,41 @@ public class HomePageView {
         Label lbl = new Label(text);
         lbl.getStyleClass().add("nav-link");
         return lbl;
+    }
+
+    private HBox buildControls() {
+        Label grFlag = new Label("🇬🇷");
+        Label enFlag = new Label("🇬🇧");
+        grFlag.getStyleClass().add("flag-icon");
+        enFlag.getStyleClass().add("flag-icon");
+
+        updateFlagOpacity(grFlag, enFlag, lang.isGreek());
+        grFlag.setOnMouseClicked(e -> {
+            lang.setGreek(true);
+            updateFlagOpacity(grFlag, enFlag, true);
+            rebuild();
+        });
+        enFlag.setOnMouseClicked(e -> {
+            lang.setGreek(false);
+            updateFlagOpacity(grFlag, enFlag, false);
+            rebuild();
+        });
+
+        HBox box = new HBox(10, grFlag, enFlag);
+        box.setAlignment(Pos.CENTER);
+        return box;
+    }
+
+    private void updateFlagOpacity(Label gr, Label en, boolean isGr) {
+        gr.setOpacity(isGr ? 1.0 : 0.35);
+        en.setOpacity(isGr ? 0.35 : 1.0);
+    }
+
+    private void rebuild() {
+        javafx.application.Platform.runLater(() -> {
+            root.setTop(buildNavBar());
+            root.setCenter(buildScrollArea());
+        });
     }
 
     private ScrollPane buildScrollArea() {
@@ -75,17 +114,17 @@ public class HomePageView {
     }
 
     private StackPane buildHero() {
-        Label heroTitle = new Label("Report City Damage");
+        Label heroTitle = new Label(lang.hero_title());
         heroTitle.getStyleClass().add("hero-title");
         heroTitle.setWrapText(true);
         heroTitle.setTextAlignment(TextAlignment.CENTER);
 
-        Label heroSubtitle = new Label("Help improve your city by reporting infrastructure issues");
+        Label heroSubtitle = new Label(lang.hero_subtitle());
         heroSubtitle.getStyleClass().add("hero-subtitle");
         heroSubtitle.setWrapText(true);
         heroSubtitle.setTextAlignment(TextAlignment.CENTER);
 
-        Button ctaBtn = new Button("Report a Problem");
+        Button ctaBtn = new Button(lang.hero_cta());
         ctaBtn.getStyleClass().add("cta-btn");
         ctaBtn.setOnAction(e -> { if (onReport != null) onReport.run(); });
 
