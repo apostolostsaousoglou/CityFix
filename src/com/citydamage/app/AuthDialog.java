@@ -12,10 +12,6 @@ public class AuthDialog {
 
     private static final Map<String, String> users = new HashMap<>();
 
-    // Simple session flag — set to true when a user successfully logs in or registers
-    private static boolean loggedIn = false;
-    private static String  currentUser = null;
-
     private final Runnable onBack;
     private StackPane cardContainer;
 
@@ -30,6 +26,7 @@ public class AuthDialog {
     public BorderPane build() {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("root-pane");
+        root.setTop(buildTopBar());
 
         cardContainer = new StackPane();
         cardContainer.setAlignment(Pos.CENTER);
@@ -43,6 +40,18 @@ public class AuthDialog {
         root.setCenter(sp);
 
         return root;
+    }
+
+    private HBox buildTopBar() {
+        Button backBtn = new Button("← Back");
+        backBtn.getStyleClass().add("login-btn");
+        backBtn.setOnAction(e -> onBack.run());
+
+        HBox bar = new HBox(backBtn);
+        bar.setPadding(new Insets(12, 32, 12, 32));
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.getStyleClass().add("navbar-container");
+        return bar;
     }
 
     private VBox buildLoginCard() {
@@ -76,8 +85,6 @@ public class AuthDialog {
                 return;
             }
             if (users.containsKey(id) && users.get(id).equals(pass)) {
-                loggedIn    = true;
-                currentUser = id;
                 done();
             } else {
                 errorLbl.setText("Incorrect email/mobile or password.");
@@ -176,8 +183,6 @@ public class AuthDialog {
             }
             users.put(email, pass);
             users.put(mobile, pass);
-            loggedIn    = true;
-            currentUser = email;
             done();
         });
 
