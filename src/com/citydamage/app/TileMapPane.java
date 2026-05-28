@@ -56,9 +56,10 @@ public class TileMapPane extends Pane {
     private final Circle marker;
     private final Line   crossH, crossV;
 
-    private boolean dragEnabled   = false;
+    private boolean dragEnabled  = false;
     private double  dragStartX, dragStartY;
     private double  dragStartLat, dragStartLon;
+    private boolean wasDragged   = false;
 
     private double  pickedLat    = 38.2466;
     private double  pickedLon    = 21.7346;
@@ -99,18 +100,18 @@ public class TileMapPane extends Pane {
             if (!dragEnabled) return;
             dragStartX   = e.getX();   dragStartY   = e.getY();
             dragStartLat = centerLat;  dragStartLon = centerLon;
+            wasDragged   = false;
         });
 
         setOnMouseDragged(e -> {
             if (!dragEnabled) return;
+            wasDragged = true;
             double dx = e.getX() - dragStartX;
             double dy = e.getY() - dragStartY;
             world.setTranslateX(dx);
             world.setTranslateY(dy);
-            double tx = tileX(dragStartLon, zoom) - dx / TILE_SIZE;
-            double ty = tileY(dragStartLat, zoom) - dy / TILE_SIZE;
-            centerLon = tx / (1 << zoom) * 360.0 - 180.0;
-            centerLat = Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1.0 - 2.0 * ty / (1 << zoom)))));
+            double[] c = offsetToLatLon(dragStartLat, dragStartLon, -dx, -dy);
+            centerLat = c[0]; centerLon = c[1];
             if (markerVisible) {
                 double[] px = latLonToPixel(pickedLat, pickedLon);
                 double mx = px[0] + world.getTranslateX();
@@ -125,9 +126,12 @@ public class TileMapPane extends Pane {
 
         setOnMouseReleased(e -> {
             if (!dragEnabled) return;
-            world.setTranslateX(0); world.setTranslateY(0);
-            layoutTiles();
-            fetchDebounce.playFromStart();
+            if (wasDragged) {
+                world.setTranslateX(0); world.setTranslateY(0);
+                layoutTiles();
+                fetchDebounce.playFromStart();
+                wasDragged = false;
+            }
         });
 
         setOnMouseClicked(e -> {
@@ -232,7 +236,6 @@ public class TileMapPane extends Pane {
             }
         }
 
-        // Reposition marker
         marker.setVisible(markerVisible);
         crossH.setVisible(markerVisible);
         crossV.setVisible(markerVisible);
@@ -363,6 +366,15 @@ public class TileMapPane extends Pane {
     private double[] pixelToLatLon(double px, double py) {
         double tx = tileX(centerLon, zoom) + (px - getWidth()  / 2.0) / TILE_SIZE;
         double ty = tileY(centerLat, zoom) + (py - getHeight() / 2.0) / TILE_SIZE;
+        return new double[]{
+            Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1.0 - 2.0 * ty / (1 << zoom))))),
+            tx / (1 << zoom) * 360.0 - 180.0
+        };
+    }
+
+    private double[] offsetToLatLon(double lat, double lon, double dx, double dy) {
+        double tx = tileX(lon, zoom) + dx / TILE_SIZE;
+        double ty = tileY(lat, zoom) + dy / TILE_SIZE;
         return new double[]{
             Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1.0 - 2.0 * ty / (1 << zoom))))),
             tx / (1 << zoom) * 360.0 - 180.0
