@@ -8,6 +8,9 @@ import javafx.scene.layout.*;
 import java.util.HashMap;
 import java.util.Map;
 
+// Same as M5_P5_C1 — back button was already present, this commit
+// adds it as a dedicated top bar component separate from the scroll area.
+
 public class AuthDialog {
 
     private static final Map<String, String> users = new HashMap<>();
