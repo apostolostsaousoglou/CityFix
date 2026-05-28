@@ -51,7 +51,8 @@ public class MainApp extends Application {
             this::showReportPage,
             () -> System.out.println("Report submitted"),
             this::showUsefulPage,
-            lat, lon
+            lat,
+            lon
         );
         scene.setRoot(infoPage.build());
     }
