@@ -3,6 +3,7 @@ package com.citydamage.app;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.layout.*;
 import javafx.scene.text.TextAlignment;
 
@@ -73,18 +74,18 @@ public class HomePageView {
         enFlag.getStyleClass().add("flag-icon");
 
         updateFlagOpacity(grFlag, enFlag, lang.isGreek());
-        grFlag.setOnMouseClicked(e -> {
-            lang.setGreek(true);
-            updateFlagOpacity(grFlag, enFlag, true);
-            rebuild();
-        });
-        enFlag.setOnMouseClicked(e -> {
-            lang.setGreek(false);
-            updateFlagOpacity(grFlag, enFlag, false);
-            rebuild();
+        grFlag.setOnMouseClicked(e -> { lang.setGreek(true);  updateFlagOpacity(grFlag, enFlag, true);  rebuild(); });
+        enFlag.setOnMouseClicked(e -> { lang.setGreek(false); updateFlagOpacity(grFlag, enFlag, false); rebuild(); });
+
+        CheckBox themeToggle = new CheckBox();
+        themeToggle.getStyleClass().add("theme-toggle");
+        themeToggle.selectedProperty().addListener((obs, was, isLight) -> {
+            ColorAdjust ca = new ColorAdjust();
+            if (isLight) { root.getStyleClass().add("light-theme");    ca.setBrightness(-0.8); }
+            else         { root.getStyleClass().remove("light-theme"); ca.setBrightness(0); }
         });
 
-        HBox box = new HBox(10, grFlag, enFlag);
+        HBox box = new HBox(10, grFlag, enFlag, themeToggle);
         box.setAlignment(Pos.CENTER);
         return box;
     }
