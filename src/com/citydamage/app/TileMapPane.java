@@ -50,8 +50,9 @@ public class TileMapPane extends Pane {
 
     private final PauseTransition fetchDebounce = new PauseTransition(Duration.millis(60));
 
-    private final Group world     = new Group();
-    private final Group tileLayer = new Group();
+    private final Group world         = new Group();
+    private final Group tileLayer     = new Group();
+    private final Group fallbackLayer = new Group();
 
     private final Circle marker;
     private final Line   crossH, crossV;
@@ -75,7 +76,7 @@ public class TileMapPane extends Pane {
 
         crossH = crossLine(); crossV = crossLine();
 
-        world.getChildren().add(tileLayer);
+        world.getChildren().addAll(fallbackLayer, tileLayer);
         getChildren().addAll(world, crossH, crossV, marker);
 
         Rectangle clip = new Rectangle();
@@ -167,6 +168,7 @@ public class TileMapPane extends Pane {
         pendingFetch.clear();
         liveViews.clear();
         tileLayer.getChildren().clear();
+        fallbackLayer.getChildren().clear();
         layoutTiles();
         fetchDebounce.playFromStart();
     }
@@ -183,7 +185,7 @@ public class TileMapPane extends Pane {
         fetchDebounce.playFromStart();
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Layout ────────────────────────────────────────────────────────────────
 
     private void layoutTiles() {
         double w = getWidth(), h = getHeight();
@@ -217,6 +219,8 @@ public class TileMapPane extends Pane {
             return false;
         });
 
+        fallbackLayer.getChildren().clear();
+
         for (int tx = startX; tx <= startX + tilesW; tx++) {
             for (int ty = startY; ty <= startY + tilesH; ty++) {
                 if (ty < 0 || ty >= maxTile) continue;
@@ -232,6 +236,9 @@ public class TileMapPane extends Pane {
                     ImageView iv = makeTileView(tileCache.get(key), px, py);
                     liveViews.put(key, iv);
                     tileLayer.getChildren().add(iv);
+                } else {
+                    ImageView fb = makeFallback(wtx, ty, px, py);
+                    if (fb != null) fallbackLayer.getChildren().add(fb);
                 }
             }
         }
@@ -262,12 +269,42 @@ public class TileMapPane extends Pane {
         int startY  = (int) Math.floor(cTY - tilesH / 2.0);
         int maxTile = 1 << zoom;
 
+        // Main tiles
         for (int tx = startX; tx <= startX + tilesW; tx++) {
             for (int ty = startY; ty <= startY + tilesH; ty++) {
                 if (ty < 0 || ty >= maxTile) continue;
                 int wtx = ((tx % maxTile) + maxTile) % maxTile;
                 submitFetch(wtx, ty, zoom);
             }
+        }
+
+        // Pre-fetch parent zoom levels (fallbacks for zoom-out)
+        for (int dz = 1; dz <= 3; dz++) {
+            int pz = zoom - dz;
+            if (pz < 2) break;
+            int pm  = 1 << pz;
+            int pSX = startX >> dz, pSY = startY >> dz;
+            int pEX = (startX + tilesW) >> dz, pEY = (startY + tilesH) >> dz;
+            for (int tx = pSX; tx <= pEX + 1; tx++)
+                for (int ty = pSY; ty <= pEY + 1; ty++) {
+                    if (ty < 0 || ty >= pm) continue;
+                    int wtx = ((tx % pm) + pm) % pm;
+                    submitFetch(wtx, ty, pz);
+                }
+        }
+
+        // Pre-fetch child zoom level (fallbacks for zoom-in)
+        int cz = zoom + 1;
+        if (cz <= 19) {
+            int cm  = 1 << cz;
+            int cSX = startX * 2, cSY = startY * 2;
+            int cEX = (startX + tilesW) * 2, cEY = (startY + tilesH) * 2;
+            for (int tx = cSX; tx <= cEX; tx++)
+                for (int ty = cSY; ty <= cEY; ty++) {
+                    if (ty < 0 || ty >= cm) continue;
+                    int wtx = ((tx % cm) + cm) % cm;
+                    submitFetch(wtx, ty, cz);
+                }
         }
     }
 
@@ -299,9 +336,39 @@ public class TileMapPane extends Pane {
                     ImageView iv = makeTileView(img, screenPx, screenPy);
                     liveViews.put(key, iv);
                     tileLayer.getChildren().add(iv);
+                    fallbackLayer.getChildren().removeIf(n -> {
+                        if (n instanceof ImageView iv2)
+                            return iv2.getUserData() != null && iv2.getUserData().equals(key);
+                        return false;
+                    });
                 }
             });
         });
+    }
+
+    // ── Fallback: nearest ancestor tile, cropped + scaled ────────────────────
+
+    private ImageView makeFallback(int x, int y, double px, double py) {
+        for (int dz = 1; dz <= 8; dz++) {
+            int pz = zoom - dz;
+            if (pz < 0) break;
+            int ax = x >> dz, ay = y >> dz;
+            String key = pz + "/" + ax + "/" + ay;
+            if (!tileCache.containsKey(key)) continue;
+            int scale   = 1 << dz;
+            int srcSize = TILE_SIZE / scale;
+            int offX    = (x % scale) * srcSize;
+            int offY    = (y % scale) * srcSize;
+            ImageView iv = new ImageView(tileCache.get(key));
+            iv.setViewport(new javafx.geometry.Rectangle2D(offX, offY, srcSize, srcSize));
+            iv.setFitWidth(TILE_SIZE);
+            iv.setFitHeight(TILE_SIZE);
+            iv.setSmooth(true);
+            iv.setMouseTransparent(true);
+            iv.setX(px); iv.setY(py);
+            return iv;
+        }
+        return null;
     }
 
     private ImageView makeTileView(Image img, double x, double y) {
