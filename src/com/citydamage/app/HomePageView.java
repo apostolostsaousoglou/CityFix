@@ -16,6 +16,12 @@ public class HomePageView {
 
     private BorderPane root;
 
+    // Stored for refreshTexts()
+    private Label navHome, navReports, navUseful;
+    private Button loginBtn, ctaBtn;
+    private Label heroTitle, heroSubtitle, howTitle, footerLabel;
+    private VBox step1Card, step2Card, step3Card;
+
     public HomePageView(Runnable onReport, Runnable onLogin, Runnable onUseful) {
         this.onReport = onReport;
         this.onLogin  = onLogin;
@@ -35,9 +41,9 @@ public class HomePageView {
         navContainer.getStyleClass().add("navbar-container");
         navContainer.setPrefHeight(60);
 
-        Label navHome    = navLink(lang.nav_home());
-        Label navReports = navLink(lang.nav_reports());
-        Label navUseful  = navLink(lang.nav_useful());
+        navHome    = navLink(lang.nav_home());
+        navReports = navLink(lang.nav_reports());
+        navUseful  = navLink(lang.nav_useful());
         navUseful.setOnMouseClicked(e -> { if (onUseful != null) onUseful.run(); });
 
         HBox links = new HBox(28, navHome, navReports, navUseful);
@@ -45,7 +51,7 @@ public class HomePageView {
 
         HBox controls = buildControls();
 
-        Button loginBtn = new Button(lang.nav_login());
+        loginBtn = new Button(lang.nav_login());
         loginBtn.getStyleClass().add("login-btn");
         loginBtn.setOnAction(e -> { if (onLogin != null) onLogin.run(); });
 
@@ -74,8 +80,8 @@ public class HomePageView {
         enFlag.getStyleClass().add("flag-icon");
 
         updateFlagOpacity(grFlag, enFlag, lang.isGreek());
-        grFlag.setOnMouseClicked(e -> { lang.setGreek(true);  updateFlagOpacity(grFlag, enFlag, true);  rebuild(); });
-        enFlag.setOnMouseClicked(e -> { lang.setGreek(false); updateFlagOpacity(grFlag, enFlag, false); rebuild(); });
+        grFlag.setOnMouseClicked(e -> { lang.setGreek(true);  updateFlagOpacity(grFlag, enFlag, true);  refreshTexts(); });
+        enFlag.setOnMouseClicked(e -> { lang.setGreek(false); updateFlagOpacity(grFlag, enFlag, false); refreshTexts(); });
 
         CheckBox themeToggle = new CheckBox();
         themeToggle.getStyleClass().add("theme-toggle");
@@ -95,11 +101,18 @@ public class HomePageView {
         en.setOpacity(isGr ? 0.35 : 1.0);
     }
 
-    private void rebuild() {
-        javafx.application.Platform.runLater(() -> {
-            root.setTop(buildNavBar());
-            root.setCenter(buildScrollArea());
-        });
+    private void refreshTexts() {
+        if (navHome    != null) navHome.setText(lang.nav_home());
+        if (navReports != null) navReports.setText(lang.nav_reports());
+        if (navUseful  != null) navUseful.setText(lang.nav_useful());
+        if (loginBtn   != null) loginBtn.setText(lang.nav_login());
+        if (heroTitle  != null) heroTitle.setText(lang.hero_title());
+        if (heroSubtitle != null) heroSubtitle.setText(lang.hero_subtitle());
+        if (ctaBtn     != null) ctaBtn.setText(lang.hero_cta());
+        if (howTitle   != null) howTitle.setText(lang.how_title());
+        if (footerLabel != null) footerLabel.setText(lang.footer());
+        if (step1Card  != null) { /* rebuild steps */ }
+        root.setCenter(buildScrollArea());
     }
 
     private ScrollPane buildScrollArea() {
@@ -115,17 +128,17 @@ public class HomePageView {
     }
 
     private StackPane buildHero() {
-        Label heroTitle = new Label(lang.hero_title());
+        heroTitle = new Label(lang.hero_title());
         heroTitle.getStyleClass().add("hero-title");
         heroTitle.setWrapText(true);
         heroTitle.setTextAlignment(TextAlignment.CENTER);
 
-        Label heroSubtitle = new Label(lang.hero_subtitle());
+        heroSubtitle = new Label(lang.hero_subtitle());
         heroSubtitle.getStyleClass().add("hero-subtitle");
         heroSubtitle.setWrapText(true);
         heroSubtitle.setTextAlignment(TextAlignment.CENTER);
 
-        Button ctaBtn = new Button(lang.hero_cta());
+        ctaBtn = new Button(lang.hero_cta());
         ctaBtn.getStyleClass().add("cta-btn");
         ctaBtn.setOnAction(e -> { if (onReport != null) onReport.run(); });
 
@@ -143,12 +156,12 @@ public class HomePageView {
     }
 
     private VBox buildHowItWorks() {
-        Label howTitle = new Label(lang.how_title());
+        howTitle = new Label(lang.how_title());
         howTitle.getStyleClass().add("section-title");
 
-        VBox step1Card = buildStepCard("📸", lang.step1_title(), lang.step1_desc());
-        VBox step2Card = buildStepCard("📝", lang.step2_title(), lang.step2_desc());
-        VBox step3Card = buildStepCard("📍", lang.step3_title(), lang.step3_desc());
+        step1Card = buildStepCard("📸", lang.step1_title(), lang.step1_desc());
+        step2Card = buildStepCard("📝", lang.step2_title(), lang.step2_desc());
+        step3Card = buildStepCard("📍", lang.step3_title(), lang.step3_desc());
 
         HBox cardsRow = new HBox(30, step1Card, step2Card, step3Card);
         cardsRow.setAlignment(Pos.CENTER);
@@ -184,7 +197,7 @@ public class HomePageView {
     }
 
     private HBox buildFooter() {
-        Label footerLabel = new Label(lang.footer());
+        footerLabel = new Label(lang.footer());
         footerLabel.getStyleClass().add("footer-text");
 
         HBox footer = new HBox(footerLabel);
