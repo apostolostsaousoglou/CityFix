@@ -8,13 +8,11 @@ import javafx.scene.layout.*;
 import java.util.HashMap;
 import java.util.Map;
 
-// Same as M5_P5_C1 — back button was already present, this commit
-// adds it as a dedicated top bar component separate from the scroll area.
-
 public class AuthDialog {
 
     private static final Map<String, String> users = new HashMap<>();
 
+    private final LanguageManager lang = LanguageManager.getInstance();
     private final Runnable onBack;
     private StackPane cardContainer;
 
@@ -46,7 +44,7 @@ public class AuthDialog {
     }
 
     private HBox buildTopBar() {
-        Button backBtn = new Button("← Back");
+        Button backBtn = new Button(lang.isGreek() ? "← Πίσω" : "← Back");
         backBtn.getStyleClass().add("login-btn");
         backBtn.setOnAction(e -> onBack.run());
 
@@ -58,16 +56,16 @@ public class AuthDialog {
     }
 
     private VBox buildLoginCard() {
-        Label title = new Label("User Login");
+        Label title = new Label(lang.isGreek() ? "Είσοδος Χρήστη" : "User Login");
         title.getStyleClass().add("auth-card-title");
 
-        Label emailLbl = new Label("Email or Mobile");
+        Label emailLbl = new Label(lang.isGreek() ? "Email ή Κινητό" : "Email or Mobile");
         emailLbl.getStyleClass().add("auth-field-label");
         TextField emailField = new TextField();
         emailField.getStyleClass().add("auth-field");
         emailField.setMaxWidth(Double.MAX_VALUE);
 
-        Label passLbl = new Label("Password");
+        Label passLbl = new Label(lang.isGreek() ? "Κωδικός" : "Password");
         passLbl.getStyleClass().add("auth-field-label");
         PasswordField passField = new PasswordField();
         passField.getStyleClass().add("auth-field");
@@ -77,24 +75,28 @@ public class AuthDialog {
         errorLbl.getStyleClass().add("auth-error-label");
         errorLbl.setWrapText(true);
 
-        Button loginBtn = new Button("Login");
+        Button loginBtn = new Button(lang.isGreek() ? "Είσοδος" : "Login");
         loginBtn.getStyleClass().add("auth-submit-btn");
         loginBtn.setMaxWidth(Double.MAX_VALUE);
         loginBtn.setOnAction(e -> {
             String id   = emailField.getText().trim();
             String pass = passField.getText();
             if (id.isEmpty() || pass.isEmpty()) {
-                errorLbl.setText("Please fill in all fields.");
+                errorLbl.setText(lang.isGreek()
+                        ? "Συμπλήρωσε όλα τα πεδία."
+                        : "Please fill in all fields.");
                 return;
             }
             if (users.containsKey(id) && users.get(id).equals(pass)) {
                 done();
             } else {
-                errorLbl.setText("Incorrect email/mobile or password.");
+                errorLbl.setText(lang.isGreek()
+                        ? "Λάθος στοιχεία εισόδου."
+                        : "Incorrect email/mobile or password.");
             }
         });
 
-        Label toggleLbl = new Label("Don't have an account?");
+        Label toggleLbl = new Label(lang.isGreek() ? "Δεν έχεις λογαριασμό;" : "Don't have an account?");
         toggleLbl.getStyleClass().add("auth-toggle-link");
         toggleLbl.setOnMouseClicked(ev -> cardContainer.getChildren().setAll(buildRegisterCard()));
 
@@ -102,7 +104,9 @@ public class AuthDialog {
                 title,
                 new VBox(6, emailLbl, emailField),
                 new VBox(6, passLbl, passField),
-                loginBtn, errorLbl, toggleLbl);
+                loginBtn,
+                errorLbl,
+                toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40, 40, 40, 40));
         card.getStyleClass().add("auth-card");
@@ -111,16 +115,16 @@ public class AuthDialog {
     }
 
     private VBox buildRegisterCard() {
-        Label title = new Label("Register");
+        Label title = new Label(lang.isGreek() ? "Στοιχεία Εγγραφής" : "Register");
         title.getStyleClass().add("auth-card-title");
 
-        Label firstLbl = new Label("First Name");
+        Label firstLbl = new Label(lang.isGreek() ? "Όνομα" : "First Name");
         firstLbl.getStyleClass().add("auth-field-label");
         TextField firstField = new TextField();
         firstField.getStyleClass().add("auth-field");
         firstField.setMaxWidth(Double.MAX_VALUE);
 
-        Label lastLbl = new Label("Last Name");
+        Label lastLbl = new Label(lang.isGreek() ? "Επώνυμο" : "Last Name");
         lastLbl.getStyleClass().add("auth-field-label");
         TextField lastField = new TextField();
         lastField.getStyleClass().add("auth-field");
@@ -138,19 +142,19 @@ public class AuthDialog {
         emailField.getStyleClass().add("auth-field");
         emailField.setMaxWidth(Double.MAX_VALUE);
 
-        Label mobileLbl = new Label("Mobile Phone");
+        Label mobileLbl = new Label(lang.isGreek() ? "Κινητό Τηλέφωνο" : "Mobile Phone");
         mobileLbl.getStyleClass().add("auth-field-label");
         TextField mobileField = new TextField();
         mobileField.getStyleClass().add("auth-field");
         mobileField.setMaxWidth(Double.MAX_VALUE);
 
-        Label passLbl = new Label("Password");
+        Label passLbl = new Label(lang.isGreek() ? "Κωδικός" : "Password");
         passLbl.getStyleClass().add("auth-field-label");
         PasswordField passField = new PasswordField();
         passField.getStyleClass().add("auth-field");
         passField.setMaxWidth(Double.MAX_VALUE);
 
-        Label confirmLbl = new Label("Confirm Password");
+        Label confirmLbl = new Label(lang.isGreek() ? "Επαλήθευση Κωδικού" : "Confirm Password");
         confirmLbl.getStyleClass().add("auth-field-label");
         PasswordField confirmField = new PasswordField();
         confirmField.getStyleClass().add("auth-field");
@@ -160,7 +164,7 @@ public class AuthDialog {
         errorLbl.getStyleClass().add("auth-error-label");
         errorLbl.setWrapText(true);
 
-        Button registerBtn = new Button("Register");
+        Button registerBtn = new Button(lang.isGreek() ? "Εγγραφή" : "Register");
         registerBtn.getStyleClass().add("auth-submit-btn");
         registerBtn.setMaxWidth(Double.MAX_VALUE);
         registerBtn.setOnAction(e -> {
@@ -173,15 +177,21 @@ public class AuthDialog {
 
             if (first.isEmpty() || last.isEmpty() || email.isEmpty()
                     || mobile.isEmpty() || pass.isEmpty() || confirm.isEmpty()) {
-                errorLbl.setText("Please fill in all fields.");
+                errorLbl.setText(lang.isGreek()
+                        ? "Συμπλήρωσε όλα τα πεδία."
+                        : "Please fill in all fields.");
                 return;
             }
             if (!pass.equals(confirm)) {
-                errorLbl.setText("Passwords do not match.");
+                errorLbl.setText(lang.isGreek()
+                        ? "Οι κωδικοί δεν ταιριάζουν."
+                        : "Passwords do not match.");
                 return;
             }
             if (users.containsKey(email)) {
-                errorLbl.setText("This email is already in use.");
+                errorLbl.setText(lang.isGreek()
+                        ? "Αυτό το email χρησιμοποιείται ήδη."
+                        : "This email is already in use.");
                 return;
             }
             users.put(email, pass);
@@ -189,7 +199,7 @@ public class AuthDialog {
             done();
         });
 
-        Label toggleLbl = new Label("Already have an account?");
+        Label toggleLbl = new Label(lang.isGreek() ? "Έχεις ήδη λογαριασμό;" : "Already have an account?");
         toggleLbl.getStyleClass().add("auth-toggle-link");
         toggleLbl.setOnMouseClicked(ev -> cardContainer.getChildren().setAll(buildLoginCard()));
 
@@ -199,7 +209,9 @@ public class AuthDialog {
                 new VBox(6, mobileLbl, mobileField),
                 new VBox(6, passLbl, passField),
                 new VBox(6, confirmLbl, confirmField),
-                registerBtn, errorLbl, toggleLbl);
+                registerBtn,
+                errorLbl,
+                toggleLbl);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(30, 40, 30, 40));
         card.getStyleClass().add("auth-card");
