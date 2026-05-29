@@ -20,10 +20,16 @@ public class UsefulPageView {
     private BorderPane rootRef;
     private ImageView  logoView;
 
+    // Loaded once, reused across language rebuilds
+    private static final Image BG = new Image(
+        "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1600", true);
+
     public UsefulPageView(Runnable onHome, Runnable onReport) {
         this.onHome   = onHome;
         this.onReport = onReport;
     }
+
+    // ─── ROOT ─────────────────────────────────────────────────────────────────
 
     public BorderPane build() {
         BorderPane root = new BorderPane();
@@ -34,54 +40,135 @@ public class UsefulPageView {
         return root;
     }
 
+    // ─── BACKGROUND + SCROLL STACK ────────────────────────────────────────────
+
     private StackPane buildCenter() {
-        VBox col = new VBox(22,
-            card("Police",              "https://www.astynomia.gr/",     new String[][]{
-                {"1st Police Department", "261 440 9750", "138 Panepistimiou St., Anthoupoli, 264 43 Patras"},
-                {"2nd Police Department", "261 089 5282", "95 Ermou St., 26110 Patras"},
-                {"3rd Police Department", "261 034 4850", "Filippou & Olympiados – Nikopoleos, 26332 Patras"},
-                {"Traffic Department",    "261 440 9770", "138 Panepistimiou St., Anthoupoli, 264 43 Patras"},
-            }),
-            card("Fire Service",        "https://www.fireservice.gr/el", new String[][]{
-                {"1st Fire Station", "261 023 3211", "Klirou Agion Martiron, 26335 Patras"},
-                {"2nd Fire Station", "261 034 4880", "Klirou Agion Martiron, Patras"},
-            }),
-            card("DEYAP",               "https://deyaponline.gr/",       new String[][]{
-                {"Patras Service", "2610 566 184", "81 Pavlou St., 262 32 Patras"},
-            }),
-            card("DEI — Public Power",  "https://www.dei.gr/el",         new String[][]{
-                {"Patras Service", "261 064 2793", "95 Ermou St., 26110 Patras"},
-            }),
-            card("Municipality of Patras", "https://www.patras.gr/",     new String[][]{
-                {"Patras Service", "261 461 6336", "7 Gounarei St., 26332 Patras"},
-            })
+        // Fixed city-photo background — lives OUTSIDE the ScrollPane so it stays put
+        ImageView bgView = new ImageView(BG);
+        bgView.setPreserveRatio(false);
+        bgView.setSmooth(true);
+
+        // Transparent scroll pane with the cards
+        ScrollPane sp = buildScrollPane();
+
+        StackPane stack = new StackPane(bgView, sp);
+        bgView.fitWidthProperty().bind(stack.widthProperty());
+        bgView.fitHeightProperty().bind(stack.heightProperty());
+        return stack;
+    }
+
+    private ScrollPane buildScrollPane() {
+        // Semi-transparent dark overlay — improves card contrast over the photo
+        VBox overlay = new VBox(buildCardsColumn(), buildFooter());
+        overlay.setStyle("-fx-background-color: rgba(4, 4, 18, 0.48);");
+
+        ScrollPane sp = new ScrollPane(overlay);
+        sp.setFitToWidth(true);
+        sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        // Must be fully transparent so the fixed ImageView shows through
+        sp.setStyle(
+            "-fx-background: transparent;" +
+            "-fx-background-color: transparent;"
         );
+        return sp;
+    }
+
+    // ─── CARDS COLUMN ─────────────────────────────────────────────────────────
+
+    private HBox buildCardsColumn() {
+        boolean gr = lang.isGreek();
+
+        VBox col = new VBox(22,
+            card(gr, "Αστυνομία", "Police",
+                "https://www.astynomia.gr/",
+                new String[][]{
+                    row(gr, "Α' Αστυνομικό Τμήμα",  "1st Police Department",
+                            "261 440 9750",
+                            "Πανεπιστημίου 138, Ανθούπολη, 264 43 Πάτρα Αχαίας",
+                            "138 Panepistimiou St., Anthoupoli, 264 43 Patras"),
+                    row(gr, "Β' Αστυνομικό Τμήμα",  "2nd Police Department",
+                            "261 089 5282",
+                            "Ερμού 95, 26110 Πάτρα Αχαίας",
+                            "95 Ermou St., 26110 Patras"),
+                    row(gr, "Γ' Αστυνομικό Τμήμα",  "3rd Police Department",
+                            "261 034 4850",
+                            "Φιλίππου & Ολυμπιάδος – Νικοπόλεως, 26332 Πάτρα Αχαίας",
+                            "Filippou & Olympiados – Nikopoleos, 26332 Patras"),
+                    row(gr, "Τμήμα Τροχαίας",        "Traffic Department",
+                            "261 440 9770",
+                            "Πανεπιστημίου 138, Ανθούπολη, 264 43 Πάτρα Αχαίας",
+                            "138 Panepistimiou St., Anthoupoli, 264 43 Patras"),
+                }),
+            card(gr, "Πυροσβεστική", "Fire Service",
+                "https://www.fireservice.gr/el",
+                new String[][]{
+                    row(gr, "Α' Πυροσβεστικός Σταθμός", "1st Fire Station",
+                            "261 023 3211",
+                            "Κλήρου Αγίων Μαρτύρων, 26335 Πάτρα Αχαίας",
+                            "Klirou Agion Martiron, 26335 Patras"),
+                    row(gr, "Β' Πυροσβεστικός Σταθμός", "2nd Fire Station",
+                            "261 034 4880",
+                            "Κλήρου Αγίων Μαρτύρων, Πάτρα Αχαίας",
+                            "Klirou Agion Martiron, Patras"),
+                }),
+            card(gr, "ΔΕΥΑΠ", "DEYAP",
+                "https://deyaponline.gr/",
+                new String[][]{
+                    row(gr, "Υπηρεσία Πατρών", "Patras Service",
+                            "2610 566 184",
+                            "Παύλου 81, 262 32 Πάτρα Αχαίας",
+                            "81 Pavlou St., 262 32 Patras"),
+                }),
+            card(gr, "ΔΕΗ", "DEI — Public Power",
+                "https://www.dei.gr/el",
+                new String[][]{
+                    row(gr, "Υπηρεσία Πατρών", "Patras Service",
+                            "261 064 2793",
+                            "Ερμού 95, 26110 Πάτρα Αχαίας",
+                            "95 Ermou St., 26110 Patras"),
+                }),
+            card(gr, "Δήμος Πατρέων", "Municipality of Patras",
+                "https://www.patras.gr/",
+                new String[][]{
+                    row(gr, "Υπηρεσία Πατρών", "Patras Service",
+                            "261 461 6336",
+                            "Γούναρη 7, 26332 Πάτρα",
+                            "7 Gounarei St., 26332 Patras"),
+                })
+        );
+
         col.setAlignment(Pos.TOP_CENTER);
         col.setMaxWidth(700);
 
         HBox centred = new HBox(col);
         centred.setAlignment(Pos.TOP_CENTER);
         centred.setPadding(new Insets(48, 40, 48, 40));
-
-        VBox overlay = new VBox(centred, buildFooter());
-        overlay.setStyle("-fx-background-color: rgba(4, 4, 18, 0.48);");
-
-        ScrollPane sp = new ScrollPane(overlay);
-        sp.setFitToWidth(true);
-        sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        sp.setStyle(
-            "-fx-background: transparent;" +
-            "-fx-background-color: transparent;"
-        );
-
-        return new StackPane(sp);
+        return centred;
     }
 
-    private VBox card(String title, String url, String[][] rows) {
-        Label lbl = new Label(title);
-        lbl.setStyle("-fx-text-fill: white; -fx-font-size: 26px; -fx-font-weight: bold;");
+    // Convenience: build a [name, phone, addrGr, addrEn] row array
+    private String[] row(boolean gr,
+                          String nameGr, String nameEn,
+                          String phone,
+                          String addrGr, String addrEn) {
+        return new String[]{ gr ? nameGr : nameEn, phone, gr ? addrGr : addrEn };
+    }
 
-        Label websitePfx = new Label("Website:");
+    // ─── SINGLE SERVICE CARD ──────────────────────────────────────────────────
+
+    private VBox card(boolean gr, String titleGr, String titleEn,
+                      String url, String[][] rows) {
+
+        // Title
+        Label title = new Label(gr ? titleGr : titleEn);
+        title.setStyle(
+            "-fx-text-fill: white;" +
+            "-fx-font-size: 26px;" +
+            "-fx-font-weight: bold;"
+        );
+
+        // Website row
+        Label websitePfx = new Label(gr ? "Ιστοσελίδα:" : "Website:");
         websitePfx.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px;");
 
         Hyperlink link = new Hyperlink(url);
@@ -98,12 +185,14 @@ public class UsefulPageView {
         HBox websiteRow = new HBox(6, websitePfx, link);
         websiteRow.setAlignment(Pos.CENTER_LEFT);
 
+        // Separator
         Separator sep = new Separator();
         sep.setStyle("-fx-background-color: rgba(255,255,255,0.15);");
         sep.setPadding(new Insets(2, 0, 4, 0));
 
-        VBox box = new VBox(10, lbl, websiteRow, sep);
+        VBox box = new VBox(10, title, websiteRow, sep);
         box.setStyle(
+            // Glass: dark translucent fill + white-tinted border
             "-fx-background-color: rgba(14, 14, 32, 0.76);" +
             "-fx-background-radius: 16;" +
             "-fx-border-color: rgba(255,255,255,0.18);" +
@@ -114,22 +203,27 @@ public class UsefulPageView {
         box.setPadding(new Insets(24, 28, 24, 28));
         box.setMaxWidth(700);
 
-        for (String[] r : rows) box.getChildren().add(buildEntry(r[0], r[1], r[2]));
+        for (String[] r : rows) box.getChildren().add(buildEntry(gr, r[0], r[1], r[2]));
+
         return box;
     }
 
-    private VBox buildEntry(String name, String phone, String address) {
+    private VBox buildEntry(boolean gr, String name, String phone, String address) {
         Label nameLbl = new Label(name + " –");
-        nameLbl.setStyle("-fx-text-fill: #f1f5f9; -fx-font-size: 15px; -fx-font-weight: bold;");
+        nameLbl.setStyle(
+            "-fx-text-fill: #f1f5f9;" +
+            "-fx-font-size: 15px;" +
+            "-fx-font-weight: bold;"
+        );
 
-        Label phonePfx = new Label("Phone:");
+        Label phonePfx = new Label(gr ? "Τηλέφωνο:" : "Phone:");
         phonePfx.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px;");
         Label phoneLbl = new Label(phone);
         phoneLbl.setStyle("-fx-text-fill: #c084fc; -fx-font-size: 13px; -fx-font-weight: bold;");
         HBox phoneRow = new HBox(6, phonePfx, phoneLbl);
         phoneRow.setAlignment(Pos.CENTER_LEFT);
 
-        Label addrPfx = new Label("Address:");
+        Label addrPfx = new Label(gr ? "Διεύθυνση:" : "Address:");
         addrPfx.setStyle("-fx-text-fill: #94a3b8; -fx-font-size: 13px;");
         Label addrLbl = new Label(address);
         addrLbl.setStyle("-fx-text-fill: #cbd5e1; -fx-font-size: 13px;");
@@ -141,6 +235,8 @@ public class UsefulPageView {
         entry.setPadding(new Insets(8, 0, 4, 0));
         return entry;
     }
+
+    // ─── NAVBAR ───────────────────────────────────────────────────────────────
 
     private StackPane buildNavBar() {
         StackPane navContainer = new StackPane();
@@ -224,6 +320,8 @@ public class UsefulPageView {
         });
     }
 
+    // ─── FOOTER ───────────────────────────────────────────────────────────────
+
     private HBox buildFooter() {
         Label footerLabel = new Label(lang.footer());
         footerLabel.getStyleClass().add("footer-text");
@@ -233,6 +331,8 @@ public class UsefulPageView {
         footer.getStyleClass().add("footer");
         return footer;
     }
+
+    // ─── HELPER ───────────────────────────────────────────────────────────────
 
     private void openUrl(String url) {
         try {
