@@ -36,6 +36,7 @@ public class ReportInfoPageView {
     private Button clearFileBtn;
     private Button backBtn;
     private Button submitBtn;
+    private Label  statusLabel;   // shows submit result
     private Label  footerLabel;
 
     private File selectedFile = null;
@@ -66,7 +67,6 @@ public class ReportInfoPageView {
         card.setMinWidth(400);
         card.setMaxWidth(520);
 
-        // Read-only map showing the picked location
         TileMapPane mapPane = new TileMapPane();
         mapPane.setLanguage(!lang.isGreek());
         mapPane.panTo(lat, lon);
@@ -144,13 +144,23 @@ public class ReportInfoPageView {
         submitBtn = new Button(gr ? "Αποστολή" : "Submit");
         submitBtn.getStyleClass().add("cta-btn");
         submitBtn.setMaxWidth(Double.MAX_VALUE);
-        submitBtn.setOnAction(e -> { if (onSubmit != null) onSubmit.run(); });
+        submitBtn.setOnAction(e -> {
+            if (onSubmit != null) onSubmit.run();
+            if (statusLabel != null) {
+                statusLabel.setText(lang.isGreek() ? "✓ Η δήλωση στάλθηκε!" : "✓ Report submitted!");
+                statusLabel.setStyle("-fx-text-fill: #4ade80; -fx-font-size: 13px;");
+            }
+        });
+
+        // Status label for submit feedback
+        statusLabel = new Label("");
+        statusLabel.setWrapText(true);
 
         HBox.setHgrow(backBtn, Priority.ALWAYS);
         HBox.setHgrow(submitBtn, Priority.ALWAYS);
         HBox bottomRow = new HBox(16, backBtn, submitBtn);
 
-        VBox card = new VBox(24, cardTitle, damageBox, commentsBox, photoBox, bottomRow);
+        VBox card = new VBox(24, cardTitle, damageBox, commentsBox, photoBox, bottomRow, statusLabel);
         card.setPadding(new Insets(40, 36, 40, 36));
         card.setAlignment(Pos.TOP_CENTER);
         return card;
