@@ -2,28 +2,31 @@ package com.citydamage.app;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+
+import java.util.function.Consumer;
 
 /**
  * Full-page login/register view. Call build() to get the root node,
  * then set it as the scene root via MainApp.
- * Users are stored in-memory for the duration of the session.
+ * Users are authenticated against the PostgreSQL database.
  */
 public class AuthDialog {
 
-    // in-memory user store: key = email or mobile, value = password
-    private static final Map<String, String> users = new HashMap<>();
-
     private final LanguageManager lang = LanguageManager.getInstance();
+    private final Consumer<DatabaseManager.UserRecord> onSuccess;
     private final Runnable onBack;
     private StackPane cardContainer;
 
-    public AuthDialog(Runnable onBack) {
-        this.onBack = onBack;
+    public AuthDialog(Runnable onBack, Consumer<DatabaseManager.UserRecord> onSuccess) {
+        this.onBack     = onBack;
+        this.onSuccess  = onSuccess;
     }
 
     public BorderPane build() {
@@ -35,12 +38,24 @@ public class AuthDialog {
         cardContainer.setAlignment(Pos.CENTER);
         cardContainer.setPadding(new Insets(60, 0, 60, 0));
         cardContainer.getChildren().add(buildLoginCard());
+        cardContainer.setStyle("-fx-background-color: rgba(4,4,18,0.52);");
 
         ScrollPane sp = new ScrollPane(cardContainer);
         sp.setFitToWidth(true);
         sp.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        sp.getStyleClass().add("main-scroll");
-        root.setCenter(sp);
+        sp.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+
+        ImageView bgView = new ImageView();
+        try { bgView.setImage(new Image(
+                new java.io.File("resources/bg.jpg").toURI().toString())); }
+        catch (Exception ignored) {}
+        bgView.setPreserveRatio(false);
+        bgView.setSmooth(true);
+
+        StackPane center = new StackPane(bgView, sp);
+        bgView.fitWidthProperty().bind(center.widthProperty());
+        bgView.fitHeightProperty().bind(center.heightProperty());
+        root.setCenter(center);
 
         return root;
     }
@@ -57,8 +72,9 @@ public class AuthDialog {
         return bar;
     }
 
-    private void done() {
-        onBack.run();
+    private void done(DatabaseManager.UserRecord user) {
+        if (onSuccess != null) onSuccess.accept(user);
+        else onBack.run();
     }
 
     // ─── LOGIN CARD ────────────────────────────────────────────────────────────
@@ -95,13 +111,22 @@ public class AuthDialog {
                         : "Please fill in all fields.");
                 return;
             }
-            if (users.containsKey(id) && users.get(id).equals(pass)) {
-                done();
-            } else {
-                errorLbl.setText(lang.isGreek()
-                        ? "Λάθος στοιχεία εισόδου."
-                        : "Incorrect email/mobile or password.");
-            }
+            loginBtn.setDisable(true);
+            Thread t = new Thread(() -> {
+                DatabaseManager.UserRecord user = DatabaseManager.getInstance().login(id, pass);
+                javafx.application.Platform.runLater(() -> {
+                    loginBtn.setDisable(false);
+                    if (user != null) {
+                        done(user);
+                    } else {
+                        errorLbl.setText(lang.isGreek()
+                                ? "Λάθος στοιχεία εισόδου."
+                                : "Incorrect email/mobile or password.");
+                    }
+                });
+            });
+            t.setDaemon(true);
+            t.start();
         });
 
         Label toggleLbl = new Label(lang.isGreek() ? "Δεν έχεις λογαριασμό;" : "Don't have an account?");
@@ -147,19 +172,52 @@ public class AuthDialog {
         HBox.setHgrow(lastBox,  Priority.ALWAYS);
         HBox nameRow = new HBox(10, firstBox, lastBox);
 
-        // Email
+        // Email with domain autocomplete
         Label emailLbl = new Label("Email");
         emailLbl.getStyleClass().add("auth-field-label");
         TextField emailField = new TextField();
         emailField.getStyleClass().add("auth-field");
         emailField.setMaxWidth(Double.MAX_VALUE);
 
-        // Mobile
+        List<String> domains = List.of(
+            "gmail.com", "yahoo.com", "hotmail.com", "outlook.com",
+            "icloud.com", "live.com", "msn.com", "protonmail.com",
+            "gmx.com", "mail.com", "yahoo.gr", "hotmail.gr"
+        );
+        ContextMenu emailSuggestions = new ContextMenu();
+        emailField.textProperty().addListener((obs, old, text) -> {
+            emailSuggestions.getItems().clear();
+            if (text.isEmpty()) { emailSuggestions.hide(); return; }
+            String prefix = text.contains("@") ? text.substring(0, text.indexOf('@')) : text;
+            String typed  = text.contains("@") ? text.substring(text.indexOf('@') + 1) : "";
+            List<String> matches = domains.stream()
+                .filter(d -> typed.isEmpty() || d.startsWith(typed))
+                .toList();
+            if (matches.isEmpty()) { emailSuggestions.hide(); return; }
+            for (String d : matches) {
+                String full = prefix + "@" + d;
+                MenuItem item = new MenuItem(full);
+                item.setOnAction(ev -> { emailField.setText(full); emailField.positionCaret(full.length()); });
+                emailSuggestions.getItems().add(item);
+            }
+            emailSuggestions.show(emailField, Side.BOTTOM, 0, 0);
+        });
+        emailField.focusedProperty().addListener((obs, old, focused) -> {
+            if (!focused) emailSuggestions.hide();
+        });
+
+        // Mobile — digits only, max 10
         Label mobileLbl = new Label(lang.isGreek() ? "Κινητό Τηλέφωνο" : "Mobile Phone");
         mobileLbl.getStyleClass().add("auth-field-label");
         TextField mobileField = new TextField();
         mobileField.getStyleClass().add("auth-field");
         mobileField.setMaxWidth(Double.MAX_VALUE);
+        mobileField.setPromptText(lang.isGreek() ? "10 ψηφία" : "10 digits");
+        mobileField.textProperty().addListener((obs, old, val) -> {
+            String digits = val.replaceAll("[^0-9]", "");
+            if (digits.length() > 10) digits = digits.substring(0, 10);
+            if (!val.equals(digits)) mobileField.setText(digits);
+        });
 
         // Password
         Label passLbl = new Label(lang.isGreek() ? "Κωδικός" : "Password");
@@ -174,6 +232,36 @@ public class AuthDialog {
         PasswordField confirmField = new PasswordField();
         confirmField.getStyleClass().add("auth-field");
         confirmField.setMaxWidth(Double.MAX_VALUE);
+
+        // Role toggle
+        Label roleLbl = new Label(lang.isGreek() ? "Τύπος Λογαριασμού" : "Account Type");
+        roleLbl.getStyleClass().add("auth-field-label");
+        ToggleGroup roleGroup = new ToggleGroup();
+        RadioButton userRbtn  = new RadioButton(lang.isGreek() ? "Χρήστης" : "User");
+        RadioButton adminRbtn = new RadioButton(lang.isGreek() ? "Διαχειριστής" : "Admin");
+        userRbtn.setToggleGroup(roleGroup);
+        adminRbtn.setToggleGroup(roleGroup);
+        userRbtn.setSelected(true);
+        userRbtn.setStyle("-fx-text-fill: #f1f5f9;");
+        adminRbtn.setStyle("-fx-text-fill: #f1f5f9;");
+        HBox roleRow = new HBox(20, userRbtn, adminRbtn);
+
+        // Admin secret password (shown only when Admin is selected)
+        Label adminKeyLbl = new Label(lang.isGreek() ? "Κωδικός Διαχειριστή" : "Admin Password");
+        adminKeyLbl.getStyleClass().add("auth-field-label");
+        PasswordField adminKeyField = new PasswordField();
+        adminKeyField.getStyleClass().add("auth-field");
+        adminKeyField.setMaxWidth(Double.MAX_VALUE);
+        adminKeyField.setPromptText(lang.isGreek() ? "Εισάγετε κωδικό πρόσβασης" : "Enter admin access code");
+        VBox adminKeyBox = new VBox(4, adminKeyLbl, adminKeyField);
+        adminKeyBox.setVisible(false);
+        adminKeyBox.setManaged(false);
+
+        adminRbtn.selectedProperty().addListener((obs, old, selected) -> {
+            adminKeyBox.setVisible(selected);
+            adminKeyBox.setManaged(selected);
+            if (!selected) adminKeyField.clear();
+        });
 
         Label errorLbl = new Label("");
         errorLbl.getStyleClass().add("auth-error-label");
@@ -197,21 +285,67 @@ public class AuthDialog {
                         : "Please fill in all fields.");
                 return;
             }
+            if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+                errorLbl.setText(lang.isGreek()
+                        ? "Μη έγκυρη διεύθυνση email."
+                        : "Invalid email address.");
+                return;
+            }
+            if (mobile.length() != 10) {
+                errorLbl.setText(lang.isGreek()
+                        ? "Το κινητό πρέπει να είναι ακριβώς 10 ψηφία."
+                        : "Phone number must be exactly 10 digits.");
+                return;
+            }
             if (!pass.equals(confirm)) {
                 errorLbl.setText(lang.isGreek()
                         ? "Οι κωδικοί δεν ταιριάζουν."
                         : "Passwords do not match.");
                 return;
             }
-            if (users.containsKey(email)) {
+            boolean isAdmin = adminRbtn.isSelected();
+            if (isAdmin && !adminKeyField.getText().equals("CEIDPATRAS")) {
                 errorLbl.setText(lang.isGreek()
-                        ? "Αυτό το email χρησιμοποιείται ήδη."
-                        : "This email is already in use.");
+                        ? "Λάθος κωδικός διαχειριστή."
+                        : "Wrong admin password.");
                 return;
             }
-            users.put(email,  pass);
-            users.put(mobile, pass);
-            done();
+
+            registerBtn.setDisable(true);
+            Thread t = new Thread(() -> {
+                DatabaseManager db = DatabaseManager.getInstance();
+                if (db.getUserByEmail(email) != null) {
+                    javafx.application.Platform.runLater(() -> {
+                        registerBtn.setDisable(false);
+                        errorLbl.setText(lang.isGreek()
+                                ? "Αυτό το email χρησιμοποιείται ήδη."
+                                : "This email is already in use.");
+                    });
+                    return;
+                }
+                if (db.getUserByPhone(mobile) != null) {
+                    javafx.application.Platform.runLater(() -> {
+                        registerBtn.setDisable(false);
+                        errorLbl.setText(lang.isGreek()
+                                ? "Αυτό το κινητό χρησιμοποιείται ήδη."
+                                : "This phone number is already in use.");
+                    });
+                    return;
+                }
+                DatabaseManager.UserRecord user = db.register(first, last, email, mobile, pass, isAdmin);
+                javafx.application.Platform.runLater(() -> {
+                    registerBtn.setDisable(false);
+                    if (user != null) {
+                        done(user);
+                    } else {
+                        errorLbl.setText(lang.isGreek()
+                                ? "Σφάλμα εγγραφής. Δοκιμάστε ξανά."
+                                : "Registration failed. Please try again.");
+                    }
+                });
+            });
+            t.setDaemon(true);
+            t.start();
         });
 
         Label toggleLbl = new Label(lang.isGreek() ? "Έχεις ήδη λογαριασμό;" : "Already have an account?");
@@ -225,6 +359,8 @@ public class AuthDialog {
                 new VBox(6, mobileLbl,  mobileField),
                 new VBox(6, passLbl,    passField),
                 new VBox(6, confirmLbl, confirmField),
+                new VBox(6, roleLbl,    roleRow),
+                adminKeyBox,
                 registerBtn,
                 errorLbl,
                 toggleLbl);
