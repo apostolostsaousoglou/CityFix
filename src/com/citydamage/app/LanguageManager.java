@@ -35,9 +35,9 @@ public class LanguageManager {
 
     // ── Text helpers ──────────────────────────────────────────────────────────
 
-    public String nav_home()      { return isGreek() ? "Αρχική"          : "Home"; }
-    public String nav_reports()   { return isGreek() ? "Αναφορές"        : "Reports"; }
-    public String nav_useful()    { return isGreek() ? "Χρήσιμα"         : "Useful"; }
+    public String nav_home()      { return isGreek() ? "Αρχική"        : "Home"; }
+    public String nav_reports()   { return isGreek() ? "Αναφορές"      : "Reports"; }
+    public String nav_useful()    { return isGreek() ? "Χρήσιμα"       : "Useful"; }
     public String nav_login()     { return isGreek() ? "Είσοδος/Εγγραφή" : "Login / Register"; }
 
     public String hero_title()    { return isGreek() ? "Είδες κάτι; Ανέφερε το." : "Saw something? Report it."; }
