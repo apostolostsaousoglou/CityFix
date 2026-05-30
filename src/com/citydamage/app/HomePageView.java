@@ -4,6 +4,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.TextAlignment;
 
@@ -15,8 +17,8 @@ public class HomePageView {
     private final Runnable onUseful;
 
     private BorderPane root;
+    private ImageView  logoView;
 
-    // Stored for refreshTexts()
     private Label navHome, navReports, navUseful;
     private Button loginBtn, ctaBtn;
     private Label heroTitle, heroSubtitle, howTitle, footerLabel;
@@ -63,7 +65,17 @@ public class HomePageView {
         navItems.setPadding(new Insets(0, 32, 0, 32));
         navItems.getStyleClass().add("navbar");
 
-        navContainer.getChildren().add(navItems);
+        logoView = new ImageView();
+        try {
+            Image logo = new Image(getClass().getResourceAsStream("/images/logo.png"));
+            logoView.setImage(logo);
+            logoView.setFitHeight(38);
+            logoView.setPreserveRatio(true);
+            logoView.getStyleClass().add("navbar-logo");
+        } catch (Exception ignored) {}
+
+        navContainer.getChildren().addAll(navItems, logoView);
+        StackPane.setAlignment(logoView, Pos.CENTER);
         return navContainer;
     }
 
@@ -89,6 +101,7 @@ public class HomePageView {
             ColorAdjust ca = new ColorAdjust();
             if (isLight) { root.getStyleClass().add("light-theme");    ca.setBrightness(-0.8); }
             else         { root.getStyleClass().remove("light-theme"); ca.setBrightness(0); }
+            if (logoView != null) logoView.setEffect(ca);
         });
 
         HBox box = new HBox(10, grFlag, enFlag, themeToggle);
@@ -102,16 +115,15 @@ public class HomePageView {
     }
 
     private void refreshTexts() {
-        if (navHome    != null) navHome.setText(lang.nav_home());
-        if (navReports != null) navReports.setText(lang.nav_reports());
-        if (navUseful  != null) navUseful.setText(lang.nav_useful());
-        if (loginBtn   != null) loginBtn.setText(lang.nav_login());
-        if (heroTitle  != null) heroTitle.setText(lang.hero_title());
-        if (heroSubtitle != null) heroSubtitle.setText(lang.hero_subtitle());
-        if (ctaBtn     != null) ctaBtn.setText(lang.hero_cta());
-        if (howTitle   != null) howTitle.setText(lang.how_title());
+        if (navHome     != null) navHome.setText(lang.nav_home());
+        if (navReports  != null) navReports.setText(lang.nav_reports());
+        if (navUseful   != null) navUseful.setText(lang.nav_useful());
+        if (loginBtn    != null) loginBtn.setText(lang.nav_login());
+        if (heroTitle   != null) heroTitle.setText(lang.hero_title());
+        if (heroSubtitle!= null) heroSubtitle.setText(lang.hero_subtitle());
+        if (ctaBtn      != null) ctaBtn.setText(lang.hero_cta());
+        if (howTitle    != null) howTitle.setText(lang.how_title());
         if (footerLabel != null) footerLabel.setText(lang.footer());
-        if (step1Card  != null) { /* rebuild steps */ }
         root.setCenter(buildScrollArea());
     }
 
