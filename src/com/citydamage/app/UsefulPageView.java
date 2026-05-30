@@ -21,8 +21,11 @@ public class UsefulPageView {
     private ImageView  logoView;
 
     // Loaded once, reused across language rebuilds
-    private static final Image BG = new Image(
-        "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1600", true);
+    private static final Image BG = loadBg();
+    private static Image loadBg() {
+        try { return new Image(new java.io.File("resources/bg.jpg").toURI().toString()); }
+        catch (Exception e) { return null; }
+    }
 
     public UsefulPageView(Runnable onHome, Runnable onReport) {
         this.onHome   = onHome;
@@ -241,7 +244,17 @@ public class UsefulPageView {
     private StackPane buildNavBar() {
         StackPane navContainer = new StackPane();
         navContainer.getStyleClass().add("navbar-container");
-        navContainer.setPrefHeight(60);
+        navContainer.setPrefHeight(72);
+
+        logoView = new ImageView();
+        try {
+            Image logo = new Image(getClass().getResourceAsStream("/images/logo.png"));
+            logoView.setImage(logo);
+            logoView.setViewport(new javafx.geometry.Rectangle2D(10, 70, 470, 200));
+            logoView.setFitHeight(62);
+            logoView.setPreserveRatio(true);
+            logoView.getStyleClass().add("navbar-logo");
+        } catch (Exception ignored) {}
 
         Label navHome    = navLink(lang.nav_home());
         Label navReports = navLink(lang.nav_reports());
@@ -251,6 +264,7 @@ public class UsefulPageView {
 
         HBox links = new HBox(28, navHome, navReports, navUseful);
         links.setAlignment(Pos.CENTER_LEFT);
+        HBox.setMargin(links, new Insets(0, 0, 0, 24));
 
         HBox controls  = buildControls();
         Button loginBtn = new Button(lang.nav_login());
@@ -259,22 +273,12 @@ public class UsefulPageView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        HBox navItems = new HBox(16, links, spacer, controls, loginBtn);
-        navItems.setAlignment(Pos.CENTER);
-        navItems.setPadding(new Insets(0, 32, 0, 32));
+        HBox navItems = new HBox(0, logoView, links, spacer, controls, loginBtn);
+        navItems.setAlignment(Pos.CENTER_LEFT);
+        navItems.setPadding(new Insets(0, 32, 0, 12));
         navItems.getStyleClass().add("navbar");
 
-        logoView = new ImageView();
-        try {
-            Image logo = new Image(getClass().getResourceAsStream("/images/logo.png"));
-            logoView.setImage(logo);
-            logoView.setFitHeight(38);
-            logoView.setPreserveRatio(true);
-            logoView.getStyleClass().add("navbar-logo");
-        } catch (Exception ignored) {}
-
-        navContainer.getChildren().addAll(navItems, logoView);
-        StackPane.setAlignment(logoView, Pos.CENTER);
+        navContainer.getChildren().add(navItems);
         return navContainer;
     }
 
@@ -285,32 +289,49 @@ public class UsefulPageView {
     }
 
     private HBox buildControls() {
-        Label grFlag = new Label("🇬🇷");
-        Label enFlag = new Label("🇬🇧");
-        grFlag.getStyleClass().add("flag-icon");
-        enFlag.getStyleClass().add("flag-icon");
+        boolean isGr = lang.isGreek();
 
-        updateFlagOpacity(grFlag, enFlag, lang.isGreek());
-        grFlag.setOnMouseClicked(e -> { lang.setGreek(true);  updateFlagOpacity(grFlag, enFlag, true);  rebuild(); });
-        enFlag.setOnMouseClicked(e -> { lang.setGreek(false); updateFlagOpacity(grFlag, enFlag, false); rebuild(); });
+        ImageView grFlag = new ImageView(new Image("https://flagcdn.com/w40/gr.png", true));
+        grFlag.setFitHeight(22); grFlag.setPreserveRatio(true);
+        grFlag.setStyle("-fx-cursor: hand;"); grFlag.setOpacity(isGr ? 1.0 : 0.35);
 
-        CheckBox themeToggle = new CheckBox();
-        themeToggle.getStyleClass().add("theme-toggle");
-        themeToggle.selectedProperty().addListener((obs, was, isLight) -> {
+        ImageView enFlag = new ImageView(new Image("https://flagcdn.com/w40/gb.png", true));
+        enFlag.setFitHeight(22); enFlag.setPreserveRatio(true);
+        enFlag.setStyle("-fx-cursor: hand;"); enFlag.setOpacity(isGr ? 0.35 : 1.0);
+
+        grFlag.setOnMouseClicked(e -> { lang.setGreek(true);  grFlag.setOpacity(1.0); enFlag.setOpacity(0.35); rebuild(); });
+        enFlag.setOnMouseClicked(e -> { lang.setGreek(false); grFlag.setOpacity(0.35); enFlag.setOpacity(1.0); rebuild(); });
+
+        javafx.scene.shape.Rectangle track = new javafx.scene.shape.Rectangle(40, 20);
+        track.setArcWidth(20); track.setArcHeight(20);
+        javafx.scene.shape.Circle thumb = new javafx.scene.shape.Circle(8);
+        boolean[] isLight = {lang.isLightTheme()};
+        if (isLight[0]) {
+            track.setFill(javafx.scene.paint.Color.web("#e2e8f0")); thumb.setFill(javafx.scene.paint.Color.web("#1e293b"));
+            thumb.setTranslateX(10);
+            rootRef.getStyleClass().add("light-theme");
+        } else {
+            track.setFill(javafx.scene.paint.Color.web("#334155")); thumb.setFill(javafx.scene.paint.Color.WHITE);
+            thumb.setTranslateX(-10);
+        }
+        StackPane togglePane = new StackPane(track, thumb);
+        togglePane.setStyle("-fx-cursor: hand;");
+        togglePane.setPrefSize(40, 20); togglePane.setMaxSize(40, 20);
+
+        togglePane.setOnMouseClicked(e -> {
+            isLight[0] = !isLight[0];
+            lang.setLightTheme(isLight[0]);
+            javafx.animation.TranslateTransition tt = new javafx.animation.TranslateTransition(javafx.util.Duration.millis(150), thumb);
+            tt.setToX(isLight[0] ? 10 : -10); tt.play();
             ColorAdjust ca = new ColorAdjust();
-            if (isLight) { rootRef.getStyleClass().add("light-theme");    ca.setBrightness(-0.8); }
-            else         { rootRef.getStyleClass().remove("light-theme"); ca.setBrightness(0); }
+            if (isLight[0]) { track.setFill(javafx.scene.paint.Color.web("#e2e8f0")); thumb.setFill(javafx.scene.paint.Color.web("#1e293b")); rootRef.getStyleClass().add("light-theme"); ca.setBrightness(-0.8); }
+            else             { track.setFill(javafx.scene.paint.Color.web("#334155")); thumb.setFill(javafx.scene.paint.Color.WHITE); rootRef.getStyleClass().remove("light-theme"); }
             if (logoView != null) logoView.setEffect(ca);
         });
 
-        HBox box = new HBox(10, grFlag, enFlag, themeToggle);
+        HBox box = new HBox(10, grFlag, enFlag, togglePane);
         box.setAlignment(Pos.CENTER);
         return box;
-    }
-
-    private void updateFlagOpacity(Label gr, Label en, boolean isGr) {
-        gr.setOpacity(isGr ? 1.0 : 0.35);
-        en.setOpacity(isGr ? 0.35 : 1.0);
     }
 
     private void rebuild() {
