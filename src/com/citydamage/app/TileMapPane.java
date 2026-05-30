@@ -38,33 +38,43 @@ public class TileMapPane extends Pane {
     private double  centerLon  = 21.7346;
     private int     zoom       = 13;
 
+    // ── LRU tile image cache (max 500 tiles) ────────────────────────────────
     private final Map<String, Image> tileCache = new LinkedHashMap<>(512, 0.75f, true) {
         @Override protected boolean removeEldestEntry(Map.Entry<String, Image> e) {
             return size() > 500;
         }
     };
 
-    private final Map<String, ImageView> liveViews    = new HashMap<>();
-    private final Set<String>            pendingFetch = new HashSet<>();
-    private final ExecutorService        executor     = Executors.newFixedThreadPool(12);
+    // Retained ImageViews — never destroyed between refreshes if key is still visible
+    private final Map<String, ImageView> liveViews = new HashMap<>();
 
-    private final PauseTransition fetchDebounce = new PauseTransition(Duration.millis(60));
+    private final Set<String>     pendingFetch = new HashSet<>();
+    private final ExecutorService executor     = Executors.newFixedThreadPool(12);
 
-    private final Group world         = new Group();
-    private final Group tileLayer     = new Group();
-    private final Group fallbackLayer = new Group();
+    // ── Scene graph ─────────────────────────────────────────────────────────
+    // world group is translated during drag — zero-cost movement
+    private final Group world      = new Group();
+    private final Group tileLayer  = new Group();   // retained tile views
+    private final Group fallbackLayer = new Group();// temporary fallbacks
 
     private final Circle marker;
     private final Line   crossH, crossV;
 
+    // ── Drag state ──────────────────────────────────────────────────────────
     private boolean dragEnabled  = false;
     private double  dragStartX, dragStartY;
     private double  dragStartLat, dragStartLon;
     private boolean wasDragged   = false;
 
+    // ── Picked location (for select mode) ───────────────────────────────────
     private double  pickedLat    = 38.2466;
     private double  pickedLon    = 21.7346;
     private boolean markerVisible = false;
+
+    // ── Debounce: fetch tiles 60 ms after last scroll/drag-release ───────────
+    private final PauseTransition fetchDebounce = new PauseTransition(Duration.millis(60));
+
+    // ──────────────────────────────────────────────────────────────────────────
 
     public TileMapPane() {
         setStyle("-fx-background-color: #ddd8cf;");
@@ -84,19 +94,29 @@ public class TileMapPane extends Pane {
         clip.heightProperty().bind(heightProperty());
         setClip(clip);
 
+        // ── Scroll: zoom around cursor, debounce tile fetch ──────────────────
         fetchDebounce.setOnFinished(e -> fetchMissingTiles());
 
         setOnScroll(e -> {
             if (e.getDeltaY() == 0) return;
             int newZoom = zoom + (e.getDeltaY() > 0 ? 1 : -1);
             if (newZoom < 3 || newZoom > 19) return;
+
+            // Zoom toward mouse cursor
+            double mx = e.getX(), my = e.getY();
+            double[] ll = pixelToLatLon(mx, my);
             zoom = newZoom;
+            // Re-centre so the tile under cursor stays fixed
+            centerLat = ll[0] + (centerLat - ll[0]) * 0.0; // handled via repositioning
+            centerLon = ll[1] + (centerLon - ll[1]) * 0.0;
+
             pendingFetch.clear();
-            layoutTiles();
-            fetchDebounce.playFromStart();
+            layoutTiles();           // instantly reposition retained views
+            fetchDebounce.playFromStart(); // fetch any gaps after 60 ms
             e.consume();
         });
 
+        // ── Drag: translate entire world group — no per-pixel refresh ────────
         setOnMousePressed(e -> {
             if (!dragEnabled) return;
             dragStartX   = e.getX();   dragStartY   = e.getY();
@@ -109,25 +129,19 @@ public class TileMapPane extends Pane {
             wasDragged = true;
             double dx = e.getX() - dragStartX;
             double dy = e.getY() - dragStartY;
+            // Translate the tile world — instant, no scene-graph rebuild
             world.setTranslateX(dx);
             world.setTranslateY(dy);
+            // Keep logical centre in sync for marker updates
             double[] c = offsetToLatLon(dragStartLat, dragStartLon, -dx, -dy);
             centerLat = c[0]; centerLon = c[1];
-            if (markerVisible) {
-                double[] px = latLonToPixel(pickedLat, pickedLon);
-                double mx = px[0] + world.getTranslateX();
-                double my = px[1] + world.getTranslateY();
-                marker.setCenterX(mx); marker.setCenterY(my);
-                crossH.setStartX(mx - 14); crossH.setEndX(mx + 14);
-                crossH.setStartY(my);      crossH.setEndY(my);
-                crossV.setStartX(mx);      crossV.setEndX(mx);
-                crossV.setStartY(my - 14); crossV.setEndY(my + 14);
-            }
+            updateMarkerPosition();
         });
 
         setOnMouseReleased(e -> {
             if (!dragEnabled) return;
             if (wasDragged) {
+                // Snap world back to origin, re-layout from new centre
                 world.setTranslateX(0); world.setTranslateY(0);
                 layoutTiles();
                 fetchDebounce.playFromStart();
@@ -140,12 +154,7 @@ public class TileMapPane extends Pane {
                 double[] ll = pixelToLatLon(e.getX(), e.getY());
                 pickedLat = ll[0]; pickedLon = ll[1];
                 markerVisible = true;
-                double[] px = latLonToPixel(pickedLat, pickedLon);
-                marker.setCenterX(px[0]); marker.setCenterY(px[1]);
-                crossH.setStartX(px[0] - 14); crossH.setEndX(px[0] + 14);
-                crossH.setStartY(px[1]);       crossH.setEndY(px[1]);
-                crossV.setStartX(px[0]);       crossV.setEndX(px[0]);
-                crossV.setStartY(px[1] - 14);  crossV.setEndY(px[1] + 14);
+                updateMarkerPosition();
                 marker.setVisible(true);
                 crossH.setVisible(true);
                 crossV.setVisible(true);
@@ -185,21 +194,25 @@ public class TileMapPane extends Pane {
         fetchDebounce.playFromStart();
     }
 
-    // ── Layout ────────────────────────────────────────────────────────────────
+    // ── Layout: reposition retained views, add cached tiles, show fallbacks ──
 
+    /**
+     * Repositions all retained tile views for the current centre/zoom.
+     * Does NOT fetch anything — zero network I/O, runs on the FX thread.
+     */
     private void layoutTiles() {
         double w = getWidth(), h = getHeight();
         if (w <= 0 || h <= 0) return;
 
         world.setTranslateX(0); world.setTranslateY(0);
 
-        double cTX  = tileX(centerLon, zoom);
-        double cTY  = tileY(centerLat, zoom);
-        int extra   = 2;
-        int tilesW  = (int) Math.ceil(w / TILE_SIZE) + extra * 2;
-        int tilesH  = (int) Math.ceil(h / TILE_SIZE) + extra * 2;
-        int startX  = (int) Math.floor(cTX - tilesW / 2.0);
-        int startY  = (int) Math.floor(cTY - tilesH / 2.0);
+        double cTX = tileX(centerLon, zoom);
+        double cTY = tileY(centerLat, zoom);
+        int extra  = 2;
+        int tilesW = (int) Math.ceil(w / TILE_SIZE) + extra * 2;
+        int tilesH = (int) Math.ceil(h / TILE_SIZE) + extra * 2;
+        int startX = (int) Math.floor(cTX - tilesW / 2.0);
+        int startY = (int) Math.floor(cTY - tilesH / 2.0);
         int maxTile = 1 << zoom;
 
         Set<String> needed = new HashSet<>();
@@ -211,6 +224,7 @@ public class TileMapPane extends Pane {
             }
         }
 
+        // Remove views for tiles that scrolled off screen
         liveViews.keySet().removeIf(key -> {
             if (!needed.contains(key)) {
                 tileLayer.getChildren().remove(liveViews.get(key));
@@ -219,6 +233,7 @@ public class TileMapPane extends Pane {
             return false;
         });
 
+        // Clear stale fallbacks
         fallbackLayer.getChildren().clear();
 
         for (int tx = startX; tx <= startX + tilesW; tx++) {
@@ -230,43 +245,40 @@ public class TileMapPane extends Pane {
                 String key = zoom + "/" + wtx + "/" + ty;
 
                 if (liveViews.containsKey(key)) {
+                    // Already displayed — just move it
                     ImageView iv = liveViews.get(key);
                     iv.setX(px); iv.setY(py);
                 } else if (tileCache.containsKey(key)) {
+                    // Cached image — create view and keep it alive
                     ImageView iv = makeTileView(tileCache.get(key), px, py);
                     liveViews.put(key, iv);
                     tileLayer.getChildren().add(iv);
                 } else {
+                    // Not yet available — show a fallback tile while fetching
                     ImageView fb = makeFallback(wtx, ty, px, py);
                     if (fb != null) fallbackLayer.getChildren().add(fb);
                 }
             }
         }
 
-        marker.setVisible(markerVisible);
-        crossH.setVisible(markerVisible);
-        crossV.setVisible(markerVisible);
-        if (markerVisible) {
-            double[] px = latLonToPixel(pickedLat, pickedLon);
-            marker.setCenterX(px[0]); marker.setCenterY(px[1]);
-            crossH.setStartX(px[0] - 14); crossH.setEndX(px[0] + 14);
-            crossH.setStartY(px[1]);       crossH.setEndY(px[1]);
-            crossV.setStartX(px[0]);       crossV.setEndX(px[0]);
-            crossV.setStartY(px[1] - 14);  crossV.setEndY(px[1] + 14);
-        }
+        updateMarkerPosition();
     }
 
+    /**
+     * Fetches tiles that are visible but not yet in cache.
+     * Runs on the FX thread to read liveViews safely; downloads happen on executor.
+     */
     private void fetchMissingTiles() {
         double w = getWidth(), h = getHeight();
         if (w <= 0 || h <= 0) return;
 
-        double cTX  = tileX(centerLon, zoom);
-        double cTY  = tileY(centerLat, zoom);
-        int extra   = 2;
-        int tilesW  = (int) Math.ceil(w / TILE_SIZE) + extra * 2;
-        int tilesH  = (int) Math.ceil(h / TILE_SIZE) + extra * 2;
-        int startX  = (int) Math.floor(cTX - tilesW / 2.0);
-        int startY  = (int) Math.floor(cTY - tilesH / 2.0);
+        double cTX = tileX(centerLon, zoom);
+        double cTY = tileY(centerLat, zoom);
+        int extra  = 2;
+        int tilesW = (int) Math.ceil(w / TILE_SIZE) + extra * 2;
+        int tilesH = (int) Math.ceil(h / TILE_SIZE) + extra * 2;
+        int startX = (int) Math.floor(cTX - tilesW / 2.0);
+        int startY = (int) Math.floor(cTY - tilesH / 2.0);
         int maxTile = 1 << zoom;
 
         // Main tiles
@@ -282,7 +294,7 @@ public class TileMapPane extends Pane {
         for (int dz = 1; dz <= 3; dz++) {
             int pz = zoom - dz;
             if (pz < 2) break;
-            int pm  = 1 << pz;
+            int pm = 1 << pz;
             int pSX = startX >> dz, pSY = startY >> dz;
             int pEX = (startX + tilesW) >> dz, pEY = (startY + tilesH) >> dz;
             for (int tx = pSX; tx <= pEX + 1; tx++)
@@ -296,7 +308,7 @@ public class TileMapPane extends Pane {
         // Pre-fetch child zoom level (fallbacks for zoom-in)
         int cz = zoom + 1;
         if (cz <= 19) {
-            int cm  = 1 << cz;
+            int cm = 1 << cz;
             int cSX = startX * 2, cSY = startY * 2;
             int cEX = (startX + tilesW) * 2, cEY = (startY + tilesH) * 2;
             for (int tx = cSX; tx <= cEX; tx++)
@@ -319,23 +331,30 @@ public class TileMapPane extends Pane {
                 pendingFetch.remove(key);
                 if (img == null) return;
                 tileCache.put(key, img);
-                if (liveViews.containsKey(key)) return;
+                // Only update the scene if this tile is currently visible
+                if (liveViews.containsKey(key)) return; // already displayed
                 double w = getWidth(), h = getHeight();
                 if (w <= 0 || h <= 0) return;
                 double cTX = tileX(centerLon, zoom);
                 double cTY = tileY(centerLat, zoom);
+                // Parse key to get z/x/y
                 String[] p = key.split("/");
                 int kz = Integer.parseInt(p[0]);
                 int kx = Integer.parseInt(p[1]);
                 int ky = Integer.parseInt(p[2]);
-                if (kz != zoom) return;
-                double screenPx = w / 2.0 + (kx - cTX) * TILE_SIZE;
-                double screenPy = h / 2.0 + (ky - cTY) * TILE_SIZE;
-                if (screenPx > -TILE_SIZE && screenPx < w + TILE_SIZE &&
-                    screenPy > -TILE_SIZE && screenPy < h + TILE_SIZE) {
-                    ImageView iv = makeTileView(img, screenPx, screenPy);
+                if (kz != zoom) {
+                    // A background pre-fetch arrived; just keep in cache
+                    return;
+                }
+                double px = w / 2.0 + (kx - cTX) * TILE_SIZE;
+                double py = h / 2.0 + (ky - cTY) * TILE_SIZE;
+                // Check it's still on screen
+                if (px > -TILE_SIZE && px < w + TILE_SIZE &&
+                    py > -TILE_SIZE && py < h + TILE_SIZE) {
+                    ImageView iv = makeTileView(img, px, py);
                     liveViews.put(key, iv);
                     tileLayer.getChildren().add(iv);
+                    // Remove matching fallback for this tile
                     fallbackLayer.getChildren().removeIf(n -> {
                         if (n instanceof ImageView iv2)
                             return iv2.getUserData() != null && iv2.getUserData().equals(key);
@@ -371,6 +390,8 @@ public class TileMapPane extends Pane {
         return null;
     }
 
+    // ── Tile ImageView factory ────────────────────────────────────────────────
+
     private ImageView makeTileView(Image img, double x, double y) {
         ImageView iv = new ImageView(img);
         iv.setFitWidth(TILE_SIZE);
@@ -381,15 +402,33 @@ public class TileMapPane extends Pane {
         return iv;
     }
 
-    private static Line crossLine() {
-        Line l = new Line();
-        l.setStroke(Color.web("#6C63FF"));
-        l.setStrokeWidth(2);
-        l.setVisible(false);
-        return l;
+    // ── Marker ────────────────────────────────────────────────────────────────
+
+    private void updateMarkerPosition() {
+        marker.setVisible(markerVisible);
+        crossH.setVisible(markerVisible);
+        crossV.setVisible(markerVisible);
+        if (!markerVisible) return;
+
+        // Marker is outside world group (no translation effect)
+        double[] px = latLonToPixel(pickedLat, pickedLon);
+        double mx = px[0] + world.getTranslateX();
+        double my = px[1] + world.getTranslateY();
+        marker.setCenterX(mx); marker.setCenterY(my);
+        crossH.setStartX(mx - 14); crossH.setEndX(mx + 14);
+        crossH.setStartY(my);      crossH.setEndY(my);
+        crossV.setStartX(mx);      crossV.setEndX(mx);
+        crossV.setStartY(my - 14); crossV.setEndY(my + 14);
     }
 
     // ── Network ───────────────────────────────────────────────────────────────
+
+    private String buildUrl(int z, int x, int y) {
+        return (useEnglish ? TILE_URL_EN : TILE_URL_GR)
+            .replace("{z}", String.valueOf(z))
+            .replace("{x}", String.valueOf(x))
+            .replace("{y}", String.valueOf(y));
+    }
 
     private Image downloadTile(String urlStr) {
         try {
@@ -417,19 +456,16 @@ public class TileMapPane extends Pane {
     private static double tileX(double lon, int z) {
         return (lon + 180.0) / 360.0 * (1 << z);
     }
-
     private static double tileY(double lat, int z) {
         double r = Math.toRadians(lat);
         return (1.0 - Math.log(Math.tan(r) + 1.0 / Math.cos(r)) / Math.PI) / 2.0 * (1 << z);
     }
-
     private double[] latLonToPixel(double lat, double lon) {
         return new double[]{
             getWidth()  / 2.0 + (tileX(lon, zoom) - tileX(centerLon, zoom)) * TILE_SIZE,
             getHeight() / 2.0 + (tileY(lat, zoom) - tileY(centerLat, zoom)) * TILE_SIZE
         };
     }
-
     private double[] pixelToLatLon(double px, double py) {
         double tx = tileX(centerLon, zoom) + (px - getWidth()  / 2.0) / TILE_SIZE;
         double ty = tileY(centerLat, zoom) + (py - getHeight() / 2.0) / TILE_SIZE;
@@ -438,7 +474,6 @@ public class TileMapPane extends Pane {
             tx / (1 << zoom) * 360.0 - 180.0
         };
     }
-
     private double[] offsetToLatLon(double lat, double lon, double dx, double dy) {
         double tx = tileX(lon, zoom) + dx / TILE_SIZE;
         double ty = tileY(lat, zoom) + dy / TILE_SIZE;
@@ -448,10 +483,17 @@ public class TileMapPane extends Pane {
         };
     }
 
-    private String buildUrl(int z, int x, int y) {
-        return (useEnglish ? TILE_URL_EN : TILE_URL_GR)
-            .replace("{z}", String.valueOf(z))
-            .replace("{x}", String.valueOf(x))
-            .replace("{y}", String.valueOf(y));
+    private static Line crossLine() {
+        Line l = new Line();
+        l.setStroke(Color.web("#6C63FF"));
+        l.setStrokeWidth(2);
+        l.setVisible(false);
+        return l;
+    }
+
+    // ── Legacy public method kept for compatibility ───────────────────────────
+    public void refresh() {
+        layoutTiles();
+        fetchDebounce.playFromStart();
     }
 }
