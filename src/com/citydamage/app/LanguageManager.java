@@ -10,6 +10,7 @@ public class LanguageManager {
 
     private static final LanguageManager INSTANCE = new LanguageManager();
     private final BooleanProperty isGreek = new SimpleBooleanProperty(true);
+    private boolean isLightTheme = false;
 
     private LanguageManager() {}
 
@@ -33,7 +34,10 @@ public class LanguageManager {
         isGreek.set(!isGreek.get());
     }
 
-    // ── Text helpers ──────────────────────────────────────────────────────────
+    public boolean isLightTheme() { return isLightTheme; }
+    public void setLightTheme(boolean value) { isLightTheme = value; }
+
+    // ── Text helpers ─────────────────────────────────────────────────────────
 
     public String nav_home()      { return isGreek() ? "Αρχική"        : "Home"; }
     public String nav_reports()   { return isGreek() ? "Αναφορές"      : "Reports"; }
@@ -46,14 +50,14 @@ public class LanguageManager {
 
     public String how_title()     { return isGreek() ? "Πώς Λειτουργεί;" : "How Does It Work?"; }
 
-    public String step1_title()   { return isGreek() ? "Εντόπισε το Πρόβλημα" : "Locate the Problem"; }
+    public String step1_title()   { return isGreek() ? "Εντοπίστε το Πρόβλημα" : "Locate the Problem"; }
     public String step1_desc()    { return isGreek() ? "Βγάλε μια φωτογραφία ή περιέγραψε το ζήτημα." : "Take a photo or describe the issue."; }
 
     public String step2_title()   { return isGreek() ? "Υποβολή Αναφοράς" : "Submit a Report"; }
     public String step2_desc()    { return isGreek() ? "Συμπλήρωσε τα στοιχεία και στείλε την αναφορά σου." : "Fill in the details and send your report."; }
 
-    public String step3_title()   { return isGreek() ? "Παρακολούθησε την Εξέλιξη" : "Track Progress"; }
+    public String step3_title()   { return isGreek() ? "Παρακολουθήστε την Εξέλιξη" : "Track Progress"; }
     public String step3_desc()    { return isGreek() ? "Λάβε ενημερώσεις για την πορεία της επίλυσης." : "Get updates on the resolution progress."; }
 
-    public String footer()        { return "© 2025 City Damage Reporter | Keeping Our City Safe"; }
+    public String footer()        { return "© 2026 City Damage Reporter | Keeping Our City Safe"; }
 }

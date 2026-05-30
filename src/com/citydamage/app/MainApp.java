@@ -8,6 +8,7 @@ public class MainApp extends Application {
 
     private Stage primaryStage;
     private Scene scene;
+    private DatabaseManager.UserRecord currentUser = null;
 
     @Override
     public void start(Stage primaryStage) {
@@ -20,7 +21,10 @@ public class MainApp extends Application {
     }
 
     public void showHomePage() {
-        HomePageView homePage = new HomePageView(this::showReportPage, this::showAuthPage, this::showUsefulPage);
+        HomePageView homePage = new HomePageView(
+            this::showReportPage, this::showAuthPage, this::showUsefulPage,
+            this::showReportsPage, this::logout, currentUser,
+            updatedUser -> { currentUser = updatedUser; showHomePage(); });
         if (scene == null) {
             scene = new Scene(homePage.build(), 1280, 750);
             scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
@@ -30,35 +34,66 @@ public class MainApp extends Application {
         }
     }
 
+    public void logout() {
+        currentUser = null;
+        showHomePage();
+    }
+
     public void showAuthPage() {
-        AuthDialog authPage = new AuthDialog(this::showHomePage);
+        AuthDialog authPage = new AuthDialog(this::showHomePage, user -> {
+            currentUser = user;
+            showHomePage();
+        });
         scene.setRoot(authPage.build());
     }
 
     public void showReportPage() {
+        if (currentUser == null) {
+            AuthDialog authPage = new AuthDialog(this::showHomePage, user -> {
+                currentUser = user;
+                showReportPage();
+            });
+            scene.setRoot(authPage.build());
+            return;
+        }
         ReportPageView[] ref = new ReportPageView[1];
         ref[0] = new ReportPageView(
             this::showHomePage,
-            () -> showReportInfoPage(ref[0].getLat(), ref[0].getLng()),
+            () -> showReportInfoPage(ref[0]),
             this::showAuthPage,
             this::showUsefulPage
         );
         scene.setRoot(ref[0].build());
     }
 
-    public void showReportInfoPage(double lat, double lon) {
+    public void showReportInfoPage(ReportPageView reportPage) {
         ReportInfoPageView infoPage = new ReportInfoPageView(
             this::showReportPage,
-            () -> System.out.println("Report submitted"),
+            this::showHomePage,
             this::showUsefulPage,
-            lat,
-            lon
+            reportPage.getLat(),
+            reportPage.getLng(),
+            reportPage.getStreet(),
+            reportPage.getNumber(),
+            reportPage.getZip(),
+            reportPage.getArea(),
+            currentUser
         );
         scene.setRoot(infoPage.build());
     }
 
+    public void showReportsPage() {
+        ReportsPageView reportsPage = new ReportsPageView(
+            this::showHomePage,
+            this::showReportPage,
+            this::showUsefulPage,
+            currentUser
+        );
+        scene.setRoot(reportsPage.build());
+    }
+
     public void showUsefulPage() {
-        UsefulPageView usefulPage = new UsefulPageView(this::showHomePage, this::showReportPage);
+        UsefulPageView usefulPage = new UsefulPageView(this::showHomePage, this::showReportsPage);
         scene.setRoot(usefulPage.build());
     }
 
