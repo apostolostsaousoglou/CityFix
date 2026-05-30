@@ -8,8 +8,14 @@ import javafx.scene.layout.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Full-page login/register view. Call build() to get the root node,
+ * then set it as the scene root via MainApp.
+ * Users are stored in-memory for the duration of the session.
+ */
 public class AuthDialog {
 
+    // in-memory user store: key = email or mobile, value = password
     private static final Map<String, String> users = new HashMap<>();
 
     private final LanguageManager lang = LanguageManager.getInstance();
@@ -18,10 +24,6 @@ public class AuthDialog {
 
     public AuthDialog(Runnable onBack) {
         this.onBack = onBack;
-    }
-
-    private void done() {
-        onBack.run();
     }
 
     public BorderPane build() {
@@ -54,6 +56,12 @@ public class AuthDialog {
         bar.getStyleClass().add("navbar-container");
         return bar;
     }
+
+    private void done() {
+        onBack.run();
+    }
+
+    // ─── LOGIN CARD ────────────────────────────────────────────────────────────
 
     private VBox buildLoginCard() {
         Label title = new Label(lang.isGreek() ? "Είσοδος Χρήστη" : "User Login");
@@ -114,10 +122,13 @@ public class AuthDialog {
         return card;
     }
 
+    // ─── REGISTER CARD ─────────────────────────────────────────────────────────
+
     private VBox buildRegisterCard() {
         Label title = new Label(lang.isGreek() ? "Στοιχεία Εγγραφής" : "Register");
         title.getStyleClass().add("auth-card-title");
 
+        // Name row
         Label firstLbl = new Label(lang.isGreek() ? "Όνομα" : "First Name");
         firstLbl.getStyleClass().add("auth-field-label");
         TextField firstField = new TextField();
@@ -131,29 +142,33 @@ public class AuthDialog {
         lastField.setMaxWidth(Double.MAX_VALUE);
 
         VBox firstBox = new VBox(4, firstLbl, firstField);
-        VBox lastBox  = new VBox(4, lastLbl, lastField);
+        VBox lastBox  = new VBox(4, lastLbl,  lastField);
         HBox.setHgrow(firstBox, Priority.ALWAYS);
-        HBox.setHgrow(lastBox, Priority.ALWAYS);
+        HBox.setHgrow(lastBox,  Priority.ALWAYS);
         HBox nameRow = new HBox(10, firstBox, lastBox);
 
+        // Email
         Label emailLbl = new Label("Email");
         emailLbl.getStyleClass().add("auth-field-label");
         TextField emailField = new TextField();
         emailField.getStyleClass().add("auth-field");
         emailField.setMaxWidth(Double.MAX_VALUE);
 
+        // Mobile
         Label mobileLbl = new Label(lang.isGreek() ? "Κινητό Τηλέφωνο" : "Mobile Phone");
         mobileLbl.getStyleClass().add("auth-field-label");
         TextField mobileField = new TextField();
         mobileField.getStyleClass().add("auth-field");
         mobileField.setMaxWidth(Double.MAX_VALUE);
 
+        // Password
         Label passLbl = new Label(lang.isGreek() ? "Κωδικός" : "Password");
         passLbl.getStyleClass().add("auth-field-label");
         PasswordField passField = new PasswordField();
         passField.getStyleClass().add("auth-field");
         passField.setMaxWidth(Double.MAX_VALUE);
 
+        // Confirm Password
         Label confirmLbl = new Label(lang.isGreek() ? "Επαλήθευση Κωδικού" : "Confirm Password");
         confirmLbl.getStyleClass().add("auth-field-label");
         PasswordField confirmField = new PasswordField();
@@ -194,7 +209,7 @@ public class AuthDialog {
                         : "This email is already in use.");
                 return;
             }
-            users.put(email, pass);
+            users.put(email,  pass);
             users.put(mobile, pass);
             done();
         });
@@ -204,10 +219,11 @@ public class AuthDialog {
         toggleLbl.setOnMouseClicked(ev -> cardContainer.getChildren().setAll(buildLoginCard()));
 
         VBox card = new VBox(10,
-                title, nameRow,
-                new VBox(6, emailLbl, emailField),
-                new VBox(6, mobileLbl, mobileField),
-                new VBox(6, passLbl, passField),
+                title,
+                nameRow,
+                new VBox(6, emailLbl,   emailField),
+                new VBox(6, mobileLbl,  mobileField),
+                new VBox(6, passLbl,    passField),
                 new VBox(6, confirmLbl, confirmField),
                 registerBtn,
                 errorLbl,
