@@ -25,6 +25,7 @@ public class ReportInfoPageView {
     private BorderPane rootRef;
     private ImageView logoView;
 
+    // Card references for language updates
     private Label  cardTitle;
     private Label  damageTypeLabel;
     private Label  commentsLabel;
@@ -36,7 +37,6 @@ public class ReportInfoPageView {
     private Button clearFileBtn;
     private Button backBtn;
     private Button submitBtn;
-    private Label  statusLabel;   // shows submit result
     private Label  footerLabel;
 
     private File selectedFile = null;
@@ -50,6 +50,8 @@ public class ReportInfoPageView {
         this.lon      = lon;
     }
 
+    // ─── ROOT ─────────────────────────────────────────────────────────────────
+
     public BorderPane build() {
         BorderPane root = new BorderPane();
         root.getStyleClass().add("root-pane");
@@ -60,6 +62,8 @@ public class ReportInfoPageView {
         return root;
     }
 
+    // ─── SPLIT LAYOUT ─────────────────────────────────────────────────────────
+
     private HBox buildSplitLayout() {
         VBox card = buildCardPanel();
         card.getStyleClass().add("report-left-panel");
@@ -67,6 +71,7 @@ public class ReportInfoPageView {
         card.setMinWidth(400);
         card.setMaxWidth(520);
 
+        // Read-only map showing the picked location
         TileMapPane mapPane = new TileMapPane();
         mapPane.setLanguage(!lang.isGreek());
         mapPane.panTo(lat, lon);
@@ -78,6 +83,8 @@ public class ReportInfoPageView {
         return split;
     }
 
+    // ─── CARD PANEL ───────────────────────────────────────────────────────────
+
     private VBox buildCardPanel() {
         boolean gr = lang.isGreek();
 
@@ -86,6 +93,7 @@ public class ReportInfoPageView {
         cardTitle.setMaxWidth(Double.MAX_VALUE);
         cardTitle.setTextAlignment(TextAlignment.CENTER);
 
+        // ── Damage Type ──────────────────────────────────────────────────────
         damageTypeLabel = fieldLabel(gr ? "Τύπος Βλάβης" : "Damage Type");
         damageCombo = new ComboBox<>();
         damageCombo.getItems().addAll(damageTypeList(gr));
@@ -94,14 +102,18 @@ public class ReportInfoPageView {
         damageCombo.setMaxWidth(Double.MAX_VALUE);
         VBox damageBox = labeledField(damageTypeLabel, damageCombo);
 
+        // ── Comments ─────────────────────────────────────────────────────────
         commentsLabel = fieldLabel(gr ? "Σχόλια" : "Comments");
         commentsArea = new TextArea();
-        commentsArea.setPromptText(gr ? "Περιγράψτε το πρόβλημα εδώ..." : "Describe the issue here...");
+        commentsArea.setPromptText(gr
+                ? "Περιγράψτε το πρόβλημα εδώ..."
+                : "Describe the issue here...");
         commentsArea.getStyleClass().add("report-field");
         commentsArea.setPrefRowCount(4);
         commentsArea.setWrapText(true);
         VBox commentsBox = labeledField(commentsLabel, commentsArea);
 
+        // ── Photo upload ─────────────────────────────────────────────────────
         photoLabel = fieldLabel(gr ? "Φωτογραφία (προαιρετικό)" : "Photo (optional)");
         fileNameLabel = new Label(gr ? "Κανένα αρχείο" : "No file chosen");
         fileNameLabel.getStyleClass().add("report-field-label");
@@ -136,6 +148,7 @@ public class ReportInfoPageView {
         fileRow.setAlignment(Pos.CENTER_LEFT);
         VBox photoBox = new VBox(6, photoLabel, fileRow);
 
+        // ── Bottom buttons ────────────────────────────────────────────────────
         backBtn = new Button(gr ? "Επιστροφή" : "Back");
         backBtn.getStyleClass().add("location-btn");
         backBtn.setMaxWidth(Double.MAX_VALUE);
@@ -144,27 +157,19 @@ public class ReportInfoPageView {
         submitBtn = new Button(gr ? "Αποστολή" : "Submit");
         submitBtn.getStyleClass().add("cta-btn");
         submitBtn.setMaxWidth(Double.MAX_VALUE);
-        submitBtn.setOnAction(e -> {
-            if (onSubmit != null) onSubmit.run();
-            if (statusLabel != null) {
-                statusLabel.setText(lang.isGreek() ? "✓ Η δήλωση στάλθηκε!" : "✓ Report submitted!");
-                statusLabel.setStyle("-fx-text-fill: #4ade80; -fx-font-size: 13px;");
-            }
-        });
-
-        // Status label for submit feedback
-        statusLabel = new Label("");
-        statusLabel.setWrapText(true);
+        submitBtn.setOnAction(e -> { if (onSubmit != null) onSubmit.run(); });
 
         HBox.setHgrow(backBtn, Priority.ALWAYS);
         HBox.setHgrow(submitBtn, Priority.ALWAYS);
         HBox bottomRow = new HBox(16, backBtn, submitBtn);
 
-        VBox card = new VBox(24, cardTitle, damageBox, commentsBox, photoBox, bottomRow, statusLabel);
+        VBox card = new VBox(24, cardTitle, damageBox, commentsBox, photoBox, bottomRow);
         card.setPadding(new Insets(40, 36, 40, 36));
         card.setAlignment(Pos.TOP_CENTER);
         return card;
     }
+
+    // ─── NAVBAR ───────────────────────────────────────────────────────────────
 
     private StackPane buildNavBar() {
         StackPane navContainer = new StackPane();
@@ -270,6 +275,8 @@ public class ReportInfoPageView {
         }
     }
 
+    // ─── FOOTER ───────────────────────────────────────────────────────────────
+
     private HBox buildFooter() {
         footerLabel = new Label(lang.footer());
         footerLabel.getStyleClass().add("footer-text");
@@ -280,24 +287,44 @@ public class ReportInfoPageView {
         return footer;
     }
 
+    // ─── HELPERS ──────────────────────────────────────────────────────────────
+
     private static List<String> damageTypeList(boolean gr) {
         if (gr) return List.of(
             "Επιλέξτε τύπο βλάβης",
-            "Χαλασμένος σωλήνας νερού", "Διαρροές αερίου", "Χαλασμένα φανάρια",
-            "Εκτεθειμένα καλώδια ή ηλεκτρολογικοί κίνδυνοι", "Λακκούβες",
-            "Πεσμένα δέντρα ή κλαδιά", "Σπασμένα πεζοδρόμια", "Κατεστραμμένα παγκάκια",
-            "Παράνομη απόρριψη απορριμμάτων", "Ανοιχτά ή χωρίς κάλυμμα φρεάτια",
-            "Σπασμένες παιδικές χαρές", "Χαλασμένος δημοτικός φωτισμός",
-            "Κατεστραμμένες στάσεις λεωφορείων", "Ρωγμές σε τοίχους δημόσιων κτιρίων", "Άλλο"
+            "Χαλασμένος σωλήνας νερού",
+            "Διαρροές αερίου",
+            "Χαλασμένα φανάρια",
+            "Εκτεθειμένα καλώδια ή ηλεκτρολογικοί κίνδυνοι",
+            "Λακκούβες",
+            "Πεσμένα δέντρα ή κλαδιά",
+            "Σπασμένα πεζοδρόμια",
+            "Κατεστραμμένα παγκάκια",
+            "Παράνομη απόρριψη απορριμμάτων",
+            "Ανοιχτά ή χωρίς κάλυμμα φρεάτια",
+            "Σπασμένες παιδικές χαρές",
+            "Χαλασμένος δημοτικός φωτισμός",
+            "Κατεστραμμένες στάσεις λεωφορείων",
+            "Ρωγμές σε τοίχους δημόσιων κτιρίων",
+            "Άλλο"
         );
         return List.of(
             "Select damage type",
-            "Broken water pipe", "Gas leaks", "Broken traffic lights",
-            "Exposed wires or electrical hazards", "Potholes",
-            "Fallen trees or branches", "Broken sidewalks", "Damaged benches",
-            "Illegal dumping of garbage", "Open or uncovered manholes",
-            "Broken playground equipment", "Broken municipal lighting",
-            "Damaged bus stops", "Cracks in public building walls", "Other"
+            "Broken water pipe",
+            "Gas leaks",
+            "Broken traffic lights",
+            "Exposed wires or electrical hazards",
+            "Potholes",
+            "Fallen trees or branches",
+            "Broken sidewalks",
+            "Damaged benches",
+            "Illegal dumping of garbage",
+            "Open or uncovered manholes",
+            "Broken playground equipment",
+            "Broken municipal lighting",
+            "Damaged bus stops",
+            "Cracks in public building walls",
+            "Other"
         );
     }
 
@@ -313,7 +340,9 @@ public class ReportInfoPageView {
         return box;
     }
 
-    public String getDamageType() { return damageCombo  != null ? damageCombo.getValue()  : ""; }
-    public String getComments()   { return commentsArea != null ? commentsArea.getText()   : ""; }
+    // ─── GETTERS ──────────────────────────────────────────────────────────────
+
+    public String getDamageType() { return damageCombo != null ? damageCombo.getValue() : ""; }
+    public String getComments()   { return commentsArea != null ? commentsArea.getText() : ""; }
     public File   getPhotoFile()  { return selectedFile; }
 }
