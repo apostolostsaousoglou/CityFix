@@ -1,0 +1,580 @@
+/* ═══════════════════════════════════════════════════════════════
+   City Damage Reporter — Stylesheet
+   Dark theme (default) | Light theme via .light-theme on root
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── DARK BASE ─────────────────────────────────────────────── */
+.root-pane,
+.main-scroll,
+.main-content-bg,
+.how-section {
+    -fx-background-color: #1a1a1a;
+}
+
+/* ── NAVBAR ────────────────────────────────────────────────── */
+.navbar-container {
+    -fx-background-color: #111111;
+    -fx-border-color: #2b2b2b;
+    -fx-border-width: 0 0 1 0;
+}
+
+.navbar {
+    -fx-background-color: transparent;
+}
+
+.nav-link {
+    -fx-text-fill: #e0e0e0;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.nav-link:hover {
+    -fx-text-fill: #ffffff;
+}
+
+/* Login / register button */
+.login-btn {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-padding: 10 22 10 22;
+    -fx-cursor: hand;
+}
+
+.login-btn:hover {
+    -fx-background-color: #4338ca;
+}
+
+/* Flag emojis */
+.flag-icon {
+    -fx-font-size: 20px;
+    -fx-cursor: hand;
+}
+
+/* Theme toggle checkbox styled as a pill toggle */
+.theme-toggle {
+    -fx-padding: 0;
+}
+
+.theme-toggle .box {
+    -fx-background-color: #4f46e5;
+    -fx-background-radius: 12;
+    -fx-min-width: 42px;
+    -fx-min-height: 22px;
+    -fx-max-width: 42px;
+    -fx-max-height: 22px;
+}
+
+.theme-toggle:selected .box {
+    -fx-background-color: #6366f1;
+}
+
+.theme-toggle .mark {
+    -fx-background-color: white;
+    -fx-background-radius: 50%;
+    -fx-min-width: 16px;
+    -fx-min-height: 16px;
+}
+
+/* ── HERO ──────────────────────────────────────────────────── */
+.hero-section {
+    /* Screenshots 1 & 2 use a New-York-style skyline */
+    -fx-background-image: url("https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1600");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+.hero-card {
+    -fx-background-color: rgba(15, 15, 15, 0.76);
+    -fx-background-radius: 16;
+    -fx-border-color: rgba(255, 255, 255, 0.08);
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.85), 45, 0, 0, 0);
+}
+
+.hero-title {
+    -fx-text-fill: white;
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+}
+
+.hero-subtitle {
+    -fx-text-fill: #c0c0c0;
+    -fx-font-size: 17px;
+}
+
+/* Report / CTA button */
+.cta-btn {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 9;
+    -fx-padding: 12 32 12 32;
+    -fx-cursor: hand;
+}
+
+.cta-btn:hover {
+    -fx-background-color: #4338ca;
+}
+
+/* ── HOW IT WORKS ──────────────────────────────────────────── */
+.section-title {
+    -fx-text-fill: white;
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+}
+
+/* Step cards — uniform dark tiles in a single row */
+.step-card {
+    -fx-background-color: #242424;
+    -fx-background-radius: 18;
+    -fx-cursor: hand;
+}
+
+.step-card:hover {
+    -fx-background-color: #4f46e5;
+}
+
+/* Icon inside a step card — large emoji */
+.step-card-icon {
+    -fx-font-size: 42px;
+}
+
+.step-card-title {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.step-card-desc {
+    -fx-text-fill: #9a9a9a;
+    -fx-font-size: 14px;
+}
+
+/* ── FOOTER ────────────────────────────────────────────────── */
+.footer {
+    -fx-background-color: #111111;
+    -fx-border-color: #2b2b2b;
+    -fx-border-width: 1 0 0 0;
+}
+
+.footer-text {
+    -fx-text-fill: #6b6b6b;
+    -fx-font-size: 13px;
+}
+
+/* ── SCROLLPANE CHROME ─────────────────────────────────────── */
+.main-scroll {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.main-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* ════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES  (toggled via .light-theme on root)
+   ════════════════════════════════════════════════════════════ */
+
+.light-theme .root-pane,
+.light-theme .main-scroll,
+.light-theme .main-content-bg,
+.light-theme .how-section {
+    -fx-background-color: #f1f5f9;
+}
+
+.light-theme .navbar-container {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e2e8f0;
+}
+
+.light-theme .nav-link {
+    -fx-text-fill: #1e293b;
+}
+
+.light-theme .nav-link:hover {
+    -fx-text-fill: #4f46e5;
+}
+
+/* Hero card in light mode — white semi-transparent as in screenshot 2 */
+.light-theme .hero-card {
+    -fx-background-color: rgba(255, 255, 255, 0.82);
+    -fx-border-color: rgba(0, 0, 0, 0.06);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.12), 30, 0, 0, 6);
+}
+
+.light-theme .hero-title {
+    -fx-text-fill: #0f172a;
+}
+
+.light-theme .hero-subtitle {
+    -fx-text-fill: #475569;
+}
+
+.light-theme .section-title {
+    -fx-text-fill: #0f172a;
+}
+
+/* Step cards in light mode — white with a soft shadow */
+.light-theme .step-card {
+    -fx-background-color: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 20, 0, 0, 6);
+}
+
+.light-theme .step-card:hover {
+    -fx-background-color: #4f46e5;
+}
+
+.light-theme .step-card:hover .step-card-title,
+.light-theme .step-card:hover .step-card-desc {
+    -fx-text-fill: white;
+}
+
+.light-theme .step-card-title {
+    -fx-text-fill: #0f172a;
+}
+
+.light-theme .step-card-desc {
+    -fx-text-fill: #64748b;
+}
+
+.light-theme .footer {
+    -fx-background-color: #e2e8f0;
+    -fx-border-color: #cbd5e1;
+}
+
+.light-theme .footer-text {
+    -fx-text-fill: #94a3b8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REPORT PAGE CSS  — append to your existing styles.css
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Split container ──────────────────────────────────────── */
+.report-split {
+    -fx-background-color: transparent;
+}
+
+/* ── Left panel (solid white card, like image 3) ──────────── */
+.report-left-panel {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0 1 0 0;
+}
+
+/* Dark theme left panel */
+.root-pane:not(.light-theme) .report-left-panel {
+    -fx-background-color: #161622;
+    -fx-border-color: #2b2b3b;
+}
+
+/* ── Card title ───────────────────────────────────────────── */
+.report-card-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+    -fx-alignment: center;
+}
+
+.root-pane:not(.light-theme) .report-card-title {
+    -fx-text-fill: #f1f5f9;
+}
+
+/* ── Field labels ─────────────────────────────────────────── */
+.report-field-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #334155;
+}
+
+.root-pane:not(.light-theme) .report-field-label {
+    -fx-text-fill: #cbd5e1;
+}
+
+/* ── Text fields ──────────────────────────────────────────── */
+.report-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 9 12;
+    -fx-font-size: 13px;
+    -fx-text-fill: #0f172a;
+    -fx-prompt-text-fill: #94a3b8;
+}
+
+.report-field:focused {
+    -fx-border-color: #4f46e5;
+    -fx-effect: dropshadow(gaussian, rgba(79,70,229,0.2), 6, 0, 0, 0);
+}
+
+.root-pane:not(.light-theme) .report-field {
+    -fx-background-color: #1e1e2e;
+    -fx-border-color: #3b3b52;
+    -fx-text-fill: #f1f5f9;
+    -fx-prompt-text-fill: #64748b;
+}
+
+/* ── Area combo ───────────────────────────────────────────── */
+.report-combo {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 7 10;
+    -fx-font-size: 13px;
+    -fx-text-fill: #0f172a;
+}
+
+.report-combo .list-cell {
+    -fx-text-fill: #0f172a;
+    -fx-background-color: #ffffff;
+    -fx-font-size: 13px;
+}
+
+.root-pane:not(.light-theme) .report-combo {
+    -fx-background-color: #1e1e2e;
+    -fx-border-color: #3b3b52;
+    -fx-text-fill: #f1f5f9;
+}
+
+.root-pane:not(.light-theme) .report-combo .list-cell {
+    -fx-background-color: #1e1e2e;
+    -fx-text-fill: #f1f5f9;
+}
+
+/* ── Current Location button (outlined pill) ──────────────── */
+.location-btn {
+    -fx-background-color: transparent;
+    -fx-border-color: #94a3b8;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 50;
+    -fx-background-radius: 50;
+    -fx-text-fill: #334155;
+    -fx-font-size: 13px;
+    -fx-padding: 8 24;
+    -fx-cursor: hand;
+}
+
+.location-btn:hover {
+    -fx-border-color: #4f46e5;
+    -fx-text-fill: #4f46e5;
+}
+
+.root-pane:not(.light-theme) .location-btn {
+    -fx-border-color: #64748b;
+    -fx-text-fill: #cbd5e1;
+}
+
+.root-pane:not(.light-theme) .location-btn:hover {
+    -fx-border-color: #818cf8;
+    -fx-text-fill: #818cf8;
+}
+
+/* ── Select on Map button ─────────────────────────────────── */
+.map-select-btn {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 9;
+    -fx-padding: 12 20;
+    -fx-cursor: hand;
+}
+
+.map-select-btn:hover {
+    -fx-background-color: #4338ca;
+}
+
+/* ── Confirm Location button (shown bottom-right on map) ──── */
+.confirm-location-btn {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-padding: 13 28;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 18, 0, 0, 4);
+}
+
+.confirm-location-btn:hover {
+    -fx-background-color: #4338ca;
+}
+
+/* ── WebView map area ─────────────────────────────────────── */
+.map-view {
+    -fx-background-color: #e8e8e8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AUTH DIALOG CSS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Background: same city-skyline as hero */
+.auth-bg {
+    -fx-background-image: url("https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1600");
+    -fx-background-size: cover;
+    -fx-background-position: center;
+}
+
+/* Card: dark semi-transparent overlay */
+.auth-card {
+    -fx-background-color: rgba(18, 18, 28, 0.88);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255, 255, 255, 0.07);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.9), 50, 0, 0, 0);
+}
+
+/* Card title */
+.auth-card-title {
+    -fx-text-fill: white;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-padding: 0 0 8 0;
+}
+
+/* Field labels */
+.auth-field-label {
+    -fx-text-fill: #c0c8d8;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* Input fields */
+.auth-field {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1;
+    -fx-border-radius: 7;
+    -fx-background-radius: 7;
+    -fx-padding: 9 12;
+    -fx-font-size: 13px;
+    -fx-text-fill: #0f172a;
+    -fx-prompt-text-fill: #94a3b8;
+}
+
+.auth-field:focused {
+    -fx-border-color: #4f46e5;
+    -fx-effect: dropshadow(gaussian, rgba(79,70,229,0.3), 6, 0, 0, 0);
+}
+
+/* Submit button (purple) */
+.auth-submit-btn {
+    -fx-background-color: #4f46e5;
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 9;
+    -fx-padding: 12 0;
+    -fx-cursor: hand;
+}
+
+.auth-submit-btn:hover {
+    -fx-background-color: #4338ca;
+}
+
+/* Toggle link (teal) */
+.auth-toggle-link {
+    -fx-text-fill: #22d3ee;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-underline: true;
+    -fx-alignment: center;
+}
+
+.auth-toggle-link:hover {
+    -fx-text-fill: #67e8f9;
+}
+
+/* Error message */
+.auth-error-label {
+    -fx-text-fill: #f87171;
+    -fx-font-size: 12px;
+    -fx-alignment: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   USEFUL PAGE
+   ═══════════════════════════════════════════════════════════════ */
+
+.useful-bg {
+    -fx-background-image: url("https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1600");
+    -fx-background-size: cover;
+    -fx-background-position: center top;
+    -fx-background-color: #1a1a2e;
+}
+
+/* Service card — dark semi-transparent panel */
+.useful-card {
+    -fx-background-color: rgba(12, 12, 20, 0.84);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(255, 255, 255, 0.09);
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.75), 28, 0, 0, 4);
+}
+
+/* Card title (Αστυνομία, Πυροσβεστική…) */
+.useful-card-title {
+    -fx-text-fill: white;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+/* Separator inside card */
+.useful-sep {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* "Ιστοσελίδα:", "Τηλέφωνο:", "Διεύθυνση:" labels */
+.useful-meta-label {
+    -fx-text-fill: #a0aec0;
+    -fx-font-size: 13px;
+}
+
+/* Clickable URL */
+.useful-link {
+    -fx-text-fill: #60a5fa;
+    -fx-font-size: 13px;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-underline: true;
+}
+
+.useful-link:hover {
+    -fx-text-fill: #93c5fd;
+}
+
+/* Department / station name */
+.useful-entry-name {
+    -fx-text-fill: #f1f5f9;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+/* Phone number — purple accent */
+.useful-phone {
+    -fx-text-fill: #a78bfa;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+/* Address text */
+.useful-address {
+    -fx-text-fill: #cbd5e1;
+    -fx-font-size: 13px;
+}
